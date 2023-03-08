@@ -11,3 +11,6 @@ def handle_connect():
 @app.route("/")
 def hello_world():
     return "<p>Hello, World!</p>"
+
+if __name__ == 'main':
+    socket.run(app)
