@@ -1,16 +1,30 @@
 from flask import Flask
-from flask_socketio import SocketIO
+import socketio
 
 app = Flask(__name__)
-socket = SocketIO(app)
 
-@socket.on('connect')
-def handle_connect():
-    print('Novo cliente conectado')
+sio = socketio.Client()
+sio.connect('http://localhost:3333')
+
+@sio.event
+def connect():
+    print('connected')
+
+
+@sio.event
+def connect_error(e):
+    print(f'Error: {e}')
+
+
+@sio.on('server1 server2')
+def receive_images(images):
+    pass
+
+if __name__ == '__main__':
+    sio.connect('http://localhost:3333')
+    sio.wait()
+
 
 @app.route("/")
 def hello_world():
     return "<p>Hello, World!</p>"
-
-if __name__ == 'main':
-    socket.run(app)
