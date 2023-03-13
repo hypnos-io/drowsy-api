@@ -1,0 +1,21 @@
+*{
+    background-color: #658EA9;
+ }
+ #videoCam {
+    width: 630px;
+    height: 300px;
+    margin-left: 0px;
+    border: 3px solid #ccc;
+    background: black;
+ }
+ #startBtn {
+    margin-left: 280px;
+    width: 120px;
+    height: 45px;
+    cursor: pointer;
+    font-weight: bold;
+ }
+ #startBtn:hover{
+    background-color: #647C90;
+    color: red;
+ }
