@@ -25,7 +25,7 @@ async function openCam() {
     });
   }
 
-  var socket = io('http://localhost:3000');
+  var socket = io('http://localhost:3001');
   
   async function captureFrame(video) {
     var canvas = document.createElement('canvas');
@@ -33,7 +33,7 @@ async function openCam() {
     canvas.height = video.videoHeight;
     canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
     var dataUrl = canvas.toDataURL();
-    socket.emit('sendFrame', { message: dataUrl });
+    socket.emit('sendFrame', { image: dataUrl });
     setTimeout(function() {
       captureFrame(video);
     }, 1000); // capture a frame every 1000 milliseconds (1 second)
