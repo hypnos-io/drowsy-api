@@ -37,7 +37,7 @@ async def receive_images(image):
 async def connect_to_server():
     while True:
         try:
-            await sio.connect('http://localhost:3333')
+            await sio.connect('http://localhost:3001')
             break
         except socketio.exceptions.ConnectionError:
             sleep(5)
