@@ -33,7 +33,7 @@ async function openCam() {
     canvas.height = video.videoHeight;
     canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
     var dataUrl = canvas.toDataURL();
-    socket.emit('sendFrame', { image: dataUrl });
+    await socket.emit('sendFrame', { image: dataUrl });
     setTimeout(function() {
       captureFrame(video);
     }, 1000); // capture a frame every 1000 milliseconds (1 second)
