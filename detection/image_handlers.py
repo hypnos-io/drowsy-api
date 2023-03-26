@@ -24,7 +24,7 @@ class ImageHandler(ABC):
 
     def handle(self, image: CV2Image) -> None:
         """Process image and pass it on to the next handler on the chain"""
-        self.handle(image)
+        self._handle(image)
 
         if self._next:
             self._next.handle(image)
