@@ -2,6 +2,7 @@ import asyncio
 import socketio
 from time import sleep
 import random
+from base64_functions import base64_2_cvimage
 
 
 class SocketDataRequest:
@@ -56,10 +57,21 @@ def connect_error(data):
 
 # this function is used to receive images from hypnos api and emit a response based on
 # the worker facial status after analysis
-@sio.on('process-image')
+@sio.on('server_to_drowsy')
 async def receive_images(data):
     
-    
+    # getting the base64 url
+    frame = list(data.values())[1][0]
+    rgb_image = base64_2_cvimage(frame)
+
+    # printing images as base64 strings
+    print(rgb_image)
+    # this algorithm gets one frame and tests if the image was really received
+    #with open("imagensbase64.txt", "w") as base64:
+       #  base64.write(str(frame))
+    '''
+    Enviar imagens para análise
+    '''
     '''
     Enviar imagens para análise
     '''

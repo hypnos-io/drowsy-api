@@ -5,8 +5,7 @@ async function openCam() {
       return;
     }
     All_mediaDevices.getUserMedia({
-      audio: true,
-      video: true
+      video: true,
     })
     .then(function(vidStream) {
       var video = document.getElementById('videoCam');
