@@ -33,28 +33,3 @@ class ImageHandler(ABC):
         """Set the next handler on the chain"""
         self._next = next_handler
         return self
-
-
-class CropHandler(ImageHandler):
-    """Handles image cropping"""
-
-    def _handle(self, image: CV2Image) -> None:
-        raise NotImplementedError
-
-
-class ResizeHandler(ImageHandler):
-    """Handles image resizing"""
-
-    def __init__(self, size: Dimension, next_handler: Optional['ImageHandler'] = None):
-        super().__init__(next_handler)
-        self._size = size
-
-
-    def _handle(self, image: CV2Image) -> None:
-        cv2.resize(image, self._size, image, interpolation = cv2.INTER_AREA)
-
-class ColorHandler(ImageHandler):
-    """Handles image colorspace conversion"""
-
-    def _handle(self, image: CV2Image) -> None:
-        cv2.cvtColor(image, cv2.COLOR_RGB2GRAY, image)
