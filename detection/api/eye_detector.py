@@ -3,20 +3,18 @@ import dlib
 import os
 import glob
 from scipy.spatial import distance
+import numpy as np
 from detector import Detector
+from multiprocessing import Pool
+
+def load_image(image):
+    return cv2.imread(image, cv2.IMREAD_GRAYSCALE)
 
 
-def create_frame_list():
-        images = glob.glob("detection/api/frames/*.png")
-
-        frames = []
-
-        for image in images:
-            img = cv2.imread(image)
-            
-            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            
-            frames.append(gray)
+def create_frame_list(local):
+        images = glob.glob(f"detection/api/frames/{local}/*.png")
+        
+        frames = [cv2.imread(image, cv2.IMREAD_GRAYSCALE) for image in images]
             
         return frames
 
@@ -31,10 +29,12 @@ class EyeDetector(Detector):
         self.frames = []
         
     def calculate_ear(self, eye):
-        A = distance.euclidean(eye[1], eye[5])
-        B = distance.euclidean(eye[2], eye[4])
-        C = distance.euclidean(eye[0], eye[3])
-        ear_aspect_ratio = (A+B)/(2.0*C)
+        eye = np.array(eye)
+        p2_minus_p6 = np.linalg.norm(eye[1] - eye[5])
+        p3_minus_p5 = np.linalg.norm(eye[2] - eye[4])
+        p1_minus_p4 = np.linalg.norm(eye[0] - eye[3])
+
+        ear_aspect_ratio = (p2_minus_p6 + p3_minus_p5) / (2.0 * p1_minus_p4)
         return ear_aspect_ratio
     
     def get_eyes(self, frame, face):
@@ -46,32 +46,27 @@ class EyeDetector(Detector):
         	x = face_landmarks.part(n).x
         	y = face_landmarks.part(n).y
         	left_eye.append((x,y))
-        	next_point = n+1
-        	if n == 41:
-        		next_point = 36
-        	x2 = face_landmarks.part(next_point).x
-        	y2 = face_landmarks.part(next_point).y
-        	cv2.line(frame,(x,y),(x2,y2),(0,255,0),1)
 
         for n in range(42,48):
         	x = face_landmarks.part(n).x
         	y = face_landmarks.part(n).y
         	right_eye.append((x,y))
-        	next_point = n+1
-        	if n == 47:
-        		next_point = 42
-        	x2 = face_landmarks.part(next_point).x
-        	y2 = face_landmarks.part(next_point).y
-        	cv2.line(frame,(x,y),(x2,y2),(0,255,0),1)
+
          
         return left_eye, right_eye
         
     
-    def closed_eyes(self, consecutive_frames_threshold, frames):
+    def __closed_eyes__(self, consecutive_frames_threshold_closed, frames):
+        if len(frames) <= 0:
+            raise ValueError("Lista de frames vazia. Por favor, verifique.")
+
         eye_closed_time = 0
         eye_opened_time = 0
         consecutive_frames = 0
         total_eye_closed_time = 0
+        blink_count = 0
+        blink_threshold = 2
+        ear_mean = 0
         
         for frame in frames:
             faces = self.hog_face_detector(frame)
@@ -84,15 +79,19 @@ class EyeDetector(Detector):
                 
                 EAR = (left_ear+right_ear)/2
                 EAR = round(EAR,2)
+                ear_mean += EAR
                 
                 if EAR < self.eye_ratio_threshold:
                     consecutive_frames += 1
                     
-                    if consecutive_frames >= consecutive_frames_threshold:
+                    if consecutive_frames >= consecutive_frames_threshold_closed:
                         eye_closed_time += 1 / len(frames)
                         total_eye_closed_time += eye_closed_time
                         eye_opened_time = 0
+                    
                 else:
+                    if consecutive_frames >= blink_threshold:
+                        blink_count += 1
                     consecutive_frames = 0
                     
                     if eye_closed_time > 0:
@@ -100,11 +99,17 @@ class EyeDetector(Detector):
                         if eye_opened_time > 1.0:
                             eye_closed_time = 0
                             eye_opened_time = 0
+                            
+        ear_mean = ear_mean/len(frames)
+        return total_eye_closed_time, blink_count, ear_mean
         
-        return total_eye_closed_time
 
     def cropROI(self, source):
         pass
-    "Executes the Eye detection"
+    
     def execute(self, frames):
-        pass
+        "Executes the Eye detection"
+        time, blink, ear = self.__closed_eyes__(3, frames)
+        print(f"tempo de olhos fechados: {time:.2f}")
+        print(f"quantidade de piscadas: {blink}")
+        print(f"média da abertura do olho: {ear:.2f}")
