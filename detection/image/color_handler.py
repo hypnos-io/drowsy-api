@@ -1,6 +1,4 @@
-from detection.image.image_handler import CV2Image
 from image_handler import ImageHandler
-import cv2
 
 class ColorHandler(ImageHandler):
     """Handles image colorspace conversion"""

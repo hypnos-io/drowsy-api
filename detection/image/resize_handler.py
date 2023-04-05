@@ -1,7 +1,3 @@
-from typing import Optional
-
-import cv2
-from detection.image.image_handler import CV2Image, Dimension
 from image_handler import ImageHandler
 
 class ResizeHandler(ImageHandler):
