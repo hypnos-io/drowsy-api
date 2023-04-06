@@ -5,9 +5,12 @@ import random
 
 
 class SocketDataRequest:
-    def __init__(self, id: str, images: list[str]):
+    def __init__(self, id: str, employee_id: str, workstation: str, images: list[str]):
         self.id = id
+        self.employee_id = employee_id
+        self.workstation = workstation
         self.images = images
+
 
 
 class ImageStatus:
