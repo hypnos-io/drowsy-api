@@ -4,15 +4,12 @@ import numpy as np
 import cv2 
 
 class HeadDetector(Detector):
-    def __init__(self, consecutive_frames_threshold, landmarks_model_path, head_ratio_threshold):
-        self.landmarks_model_path = landmarks_model_path
-        self.dlib_facelandmark = dlib.shape_predictor(self.landmarks_model_path)
-        self.consecutive_frames_threshold = consecutive_frames_threshold
-        self.eye_ratio_threshold = head_ratio_threshold
+    def __init__(self, head_ratio_threshold):
+        self.head_ratio_threshold = head_ratio_threshold
         self.mp_pose = mp.solutions.pose
         self.frames = []
     
-    def calculate_head_angle(a, b, c):
+    def calculate_head_angle(self, a, b, c):
         a = np.array(a)
         b = np.array(b)
         c = np.array(c)
@@ -25,7 +22,7 @@ class HeadDetector(Detector):
 
         return angle
 
-    def calculate_head_inclination(a, b):
+    def calculate_head_inclination(self, a, b):
         a = np.array(a)
         b = np.array(b)
 
@@ -57,7 +54,7 @@ class HeadDetector(Detector):
         else:
             pass
             
-        return head_soft_count, head_soft_count
+        return head_soft_count, head_hard_count
             
     def head_detection(
             self, 
@@ -109,7 +106,7 @@ class HeadDetector(Detector):
                 l_ear = [landmarks[self.mp_pose.PoseLandmark.LEFT_EAR.value].x, landmarks[self.mp_pose.PoseLandmark.LEFT_EAR.value].y]
 
                 angle = self.calculate_head_angle(r_ear, nose, l_ear)
-                print(angle)
+                #print(angle)
                 
                 if angle > angle_threshold:
                     consecutive_angle_frames += 1
@@ -164,7 +161,7 @@ class HeadDetector(Detector):
                             head_pos1_time = 0
                             head_pos2_time = 0
 
-        return total_head_angle_time, total_pos1_time, total_pos2_time, 
+        return total_head_angle_time, total_pos1_time, total_pos2_time
 
 
 
@@ -173,4 +170,11 @@ class HeadDetector(Detector):
 
     def execute(self, frames):
         "Executes the Head detection"
-        time, blink, ear = self.head_detection(3, frames)
+        total_head_angle_time, total_pos1_time, total_pos2_time = self.head_detection(frames)
+        result_dict = {
+            "Total Head Angle Time": total_head_angle_time,
+            "Total Pos1": total_pos1_time,
+            "Total pos2": total_pos2_time
+        }
+        
+        return result_dict
