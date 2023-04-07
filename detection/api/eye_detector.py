@@ -12,8 +12,8 @@ def load_image(image):
 
 
 def create_frame_list(local):
-        images = glob.glob(f"detection/api/frames/{local}/*.png")
-        
+        #images = glob.glob(f"detection/api/frames/{local}/*.png")
+        images = glob.glob("detection/api/frames/closed_eye.jpg")
         frames = [cv2.imread(image, cv2.IMREAD_GRAYSCALE) for image in images]
             
         return frames
@@ -102,14 +102,14 @@ class EyeDetector(Detector):
                             
         ear_mean = ear_mean/len(frames)
         return total_eye_closed_time, blink_count, ear_mean
-        
-
-    def cropROI(self, source):
-        pass
     
     def execute(self, frames):
         "Executes the Eye detection"
         time, blink, ear = self.__closed_eyes__(3, frames)
-        print(f"tempo de olhos fechados: {time:.2f}")
-        print(f"quantidade de piscadas: {blink}")
-        print(f"média da abertura do olho: {ear:.2f}")
+        detection_dict = {
+            "Piscadas": blink,
+            "Olhos fechados": round(time, 4),
+            "Abertura dos olhos": round(ear, 2)
+        }
+        
+        return detection_dict

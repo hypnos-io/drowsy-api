@@ -1,6 +1,6 @@
 import cv2
 
-vidcap = cv2.VideoCapture('detection/api/warning.mp4')
+vidcap = cv2.VideoCapture('detection/api/teste.mp4')
 def get_frame(sec):
     vidcap.set(cv2.CAP_PROP_POS_MSEC,sec*1000)
     has_frames, image = vidcap.read()
