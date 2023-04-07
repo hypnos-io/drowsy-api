@@ -51,7 +51,6 @@ class EyeDetector(Detector):
         	x = face_landmarks.part(n).x
         	y = face_landmarks.part(n).y
         	right_eye.append((x,y))
-
          
         return left_eye, right_eye
         
