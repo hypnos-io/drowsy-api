@@ -1,6 +1,6 @@
 import os
 import glob
-from detector import Detector
+from api.detector import Detector
 import cv2
 import itertools
 import numpy as np
@@ -12,8 +12,8 @@ def load_image(image):
     return cv2.imread(image, cv2.IMREAD_GRAYSCALE)
 
 
-def create_frame_list(local, extension):
-        images = glob.glob(f"detection/api/frames/{local}/*.{extension}")
+def create_frame_list(location, extension):
+        images = glob.glob(f"detection/api/frames/{location}/*.{extension}")
         
         frames = [cv2.imread(image) for image in images]
         
@@ -23,13 +23,14 @@ def create_frame_list(local, extension):
 
 
 class EyeDetector(Detector):
-    def __init__(self, closed_eyes_threshold, blink_threshold, eye_ratio_threshold=0.20):
+    def __init__(self, closed_eyes_threshold, blink_threshold, fps=10, eye_ratio_threshold=0.22):
         self.closed_eyes_threshold = closed_eyes_threshold
         self.blink_threshold = blink_threshold
         self.eye_ratio_threshold = eye_ratio_threshold
         self.frames = []
+        self.fps = fps
         self.mp_face_mesh = mp.solutions.face_mesh
-        self.face_mesh_images = self.mp_face_mesh.FaceMesh()
+        self.face_mesh_images = self.mp_face_mesh.FaceMesh(max_num_faces=1)
         
     def __calculate_left_ear__(self, left_eye):
         """Calcula o EAR (Eye Aspect Ratio) do olho esquerdo utilizando a fórmula:
@@ -94,8 +95,11 @@ P4 \          / P3
         total_eye_closed_time = 0
         blink_count = 0
         ear_mean = 0
-        
+        cls_count = 0
+        cnt = 0
+        fr = 0
         for frame in frames:
+            fr += 1
             results = self.face_mesh_images.process(frame[:,:,::-1])
             if results.multi_face_landmarks:
                 for face_landmarks in results.multi_face_landmarks:
@@ -106,14 +110,18 @@ P4 \          / P3
                     EAR = (left_eye_ear + right_eye_ear) / 2
                     EAR = round(EAR, 2)
                     ear_mean += EAR
+                    #print(f"FRAME {fr} | EAR: {EAR}")
                     
                     if EAR <= self.eye_ratio_threshold:
                         consecutive_frames += 1
+                        #print(f":{consecutive_frames}")
                         
                         if consecutive_frames >= self.closed_eyes_threshold:
-                            eye_closed_time += 1 / len(frames)
-                            total_eye_closed_time += eye_closed_time
+                            eye_closed_time += 1 / len(frames)  
+                            total_eye_closed_time += 1
                             eye_opened_time = 0
+                            cls_count += 1
+                            #print(f"eye closed at frame {cls_count}")
                     else:
                         if consecutive_frames >= self.blink_threshold:
                                 blink_count += 1
@@ -126,6 +134,7 @@ P4 \          / P3
                                     eye_opened_time = 0
                                     
         ear_mean = ear_mean/len(frames)
+        total_eye_closed_time = total_eye_closed_time / self.fps
         return total_eye_closed_time, blink_count, ear_mean
     
     def execute(self, frames):
@@ -134,9 +143,9 @@ P4 \          / P3
         "Executes the Eye detection"
         time, blink, ear = self.__detect__(frames)
         detection_dict = {
-            "Piscadas": blink,
-            "Olhos fechados": round(time, 4),
-            "Abertura dos olhos": round(ear, 2)
+            "blinks": blink,
+            "closed_eyes": round(time, 4),
+            "eye_opening": round(ear, 2)
         }
         
         return detection_dict

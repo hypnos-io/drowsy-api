@@ -7,8 +7,8 @@ class DetectionData():
         
     def to_json(self):
         new_dict = {"result": result}
-        new_dict.update(self.dictionary)
+        self.dictionary.update(new_dict)
 
-        json_data = json.dumps(new_dict)
+        json_data = json.dumps(self.dictionary)
         
         return json_data
