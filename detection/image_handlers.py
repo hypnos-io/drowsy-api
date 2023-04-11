@@ -3,13 +3,12 @@ Image Handlers
 """
 
 from abc import ABC, abstractmethod
-from typing import Self, Optional, Sequence
+from typing import Optional
+
+from drowsy_types import CV2Image, Dimension
 
 import cv2
-import numpy as np
 
-CV2Image = np.ndarray
-Dimension = Sequence[int]
 
 class ImageHandler(ABC):
     """Abstract Handler class implementing the Chain-of-responsability pattern"""
@@ -29,7 +28,7 @@ class ImageHandler(ABC):
         if self._next:
             self._next.handle(image)
 
-    def set_next(self, next_handler: 'ImageHandler') -> Self:
+    def set_next(self, next_handler: 'ImageHandler'):
         """Set the next handler on the chain"""
         self._next = next_handler
         return self
@@ -57,4 +56,4 @@ class ColorHandler(ImageHandler):
     """Handles image colorspace conversion"""
 
     def _handle(self, image: CV2Image) -> None:
-        cv2.cvtColor(image, cv2.COLOR_RGB2GRAY, image)
+        cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
