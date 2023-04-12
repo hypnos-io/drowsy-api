@@ -1,4 +1,4 @@
-from detector import Detector
+from api.detector import Detector
 import mediapipe as mp
 import numpy as np
 import cv2 
@@ -51,8 +51,6 @@ class HeadDetector(Detector):
             head_soft_count += 1
         elif inclination_middle_threshold < angle < inclination_bottom_threshold:
             head_hard_count += 1
-        else:
-            pass
             
         return head_soft_count, head_hard_count
             
@@ -75,6 +73,8 @@ class HeadDetector(Detector):
             consecutive_pos1_frames = 0
             total_pos1_time = 0
             pos1_threshold = 2
+            total_angle = []
+            tilt = []
 
             head_pos2_time = 0
             consecutive_pos2_frames = 0
@@ -106,13 +106,14 @@ class HeadDetector(Detector):
                 l_ear = [landmarks[self.mp_pose.PoseLandmark.LEFT_EAR.value].x, landmarks[self.mp_pose.PoseLandmark.LEFT_EAR.value].y]
 
                 angle = self.calculate_head_angle(r_ear, nose, l_ear)
+                total_angle.append(angle)
                 #print(angle)
                 
                 if angle > angle_threshold:
                     consecutive_angle_frames += 1
 
                     if consecutive_angle_frames == consec_frames_threshold_angle:
-                        head_down_time += 1 / len(frames)
+                        head_down_time += 1 / 10
                         total_head_angle_time += head_down_time
                         head_up_time = 0
 
@@ -120,7 +121,7 @@ class HeadDetector(Detector):
                     consecutive_angle_frames = 0
 
                     if head_up_time > 0:
-                        head_down_time += 1 / len(frames)
+                        head_down_time += 1 / 10
                         if head_down_time > 1.0:
                             head_down_time = 0
                             head_up_time = 0
@@ -132,12 +133,13 @@ class HeadDetector(Detector):
                 r_ear = [landmarks[self.mp_pose.PoseLandmark.RIGHT_EAR.value].x, landmarks[self.mp_pose.PoseLandmark.RIGHT_EAR.value].y]
 
                 angle = self.calculate_head_inclination(r_ear, l_ear)
+                tilt.append(angle)
 
                 if angle <= inclination_pos1_threshold:
                     consecutive_pos1_frames += 1
 
                     if consecutive_pos1_frames == consec_pos1_threshold_angle:
-                        head_pos1_time += 1 / len(frames)
+                        head_pos1_time += 1 / 10
                         total_pos1_time += head_pos1_time
                         head_pos0_time = 0
 
@@ -145,7 +147,7 @@ class HeadDetector(Detector):
                     consecutive_pos2_frames += 1
 
                     if consecutive_pos2_frames == consec_pos2_threshold_angle:
-                        head_pos2_time += 1 / len(frames)
+                        head_pos2_time += 1 / 10
                         total_pos2_time += head_pos2_time
                         head_pos0_time = 0
                 else:
@@ -160,8 +162,9 @@ class HeadDetector(Detector):
                             head_pos0_time = 0
                             head_pos1_time = 0
                             head_pos2_time = 0
-
-        return total_head_angle_time, total_pos1_time, total_pos2_time
+        avg_angle = round(np.mean(total_angle), 2)
+        avg_tilt = round(np.mean(tilt),2)
+        return round(total_head_angle_time, 2), avg_tilt
 
 
 
@@ -169,12 +172,11 @@ class HeadDetector(Detector):
         pass
 
     def execute(self, frames):
-        "Executes the Head detection"
-        total_head_angle_time, total_pos1_time, total_pos2_time = self.head_detection(frames)
+        "Executes the head detection"
+        total_head_angle_time, tilt = self.head_detection(frames)
         result_dict = {
-            "Total Head Angle Time": total_head_angle_time,
-            "Total Pos1": total_pos1_time,
-            "Total pos2": total_pos2_time
+            "total_head_angle_time": total_head_angle_time,
+            "avegare tilt (L/R)": tilt,
         }
         
         return result_dict
