@@ -1,18 +1,13 @@
 from time import time
-from os import path
 
-import dlib
 import cv2 as cv
 import numpy as np
 
-from drowsiness import DetectionData
-
-MODULE_DIR = path.dirname(path.abspath(__file__))
-
-PREDICTOR_FACE_68 = dlib.shape_predictor(
-    path.join(MODULE_DIR, "models", "shape_predictor_68_face_landmarks.dat")
+from drowsiness.detection.detector import (
+    AbstractDetector,
+    DETECTOR_FHOG,
+    PREDICTOR_FACE_68,
 )
-DETECTOR_FHOG = dlib.get_frontal_face_detector()
 
 
 INNER_LIP = slice(60, 68)
@@ -23,7 +18,7 @@ def point_tuple(point):
     return (point.x, point.y)
 
 
-class MouthDetector:
+class MouthDetector(AbstractDetector):
     def __init__(self, fps=24, min_area=200, min_duration=4) -> None:
         self._frame_rate = fps
         self._frame_length = 1 / fps
