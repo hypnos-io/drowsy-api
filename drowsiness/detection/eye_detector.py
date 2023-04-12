@@ -10,7 +10,7 @@ LEFT_EYE = slice(36, 42)
 RIGHT_EYE = slice(42, 48)
 
 
-class EyeDetector(DlibDetector):
+class EyeDlibDetector(DlibDetector):
     def __init__(self, blink_threshold, fps=10, ear_threshold=0.20):
         self._frame_rate = fps
         self._frame_length = 1 / fps
@@ -84,7 +84,7 @@ if __name__ == "__main__":
         print("Erro ao abrir a camera")
         exit()
 
-    detector = EyeDetector(1)
+    detector = EyeDlibDetector(1)
     prev = 0
     capture = True
     while capture:

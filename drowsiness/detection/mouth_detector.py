@@ -11,7 +11,7 @@ OUTER_LIP = slice(48, 60)
 INNER_LIP = slice(60, 68)
 
 
-class MouthDetector(DlibDetector):
+class MouthDlibDetector(DlibDetector):
     def __init__(self, fps=24, min_area=200, min_duration=4) -> None:
         self._frame_rate = fps
         self._frame_length = 1 / fps
@@ -80,7 +80,7 @@ if __name__ == "__main__":
         print("Erro ao abrir a camera")
         exit()
 
-    detector = MouthDetector()
+    detector = MouthDlibDetector()
     prev = 0
     capture = True
     while capture:
