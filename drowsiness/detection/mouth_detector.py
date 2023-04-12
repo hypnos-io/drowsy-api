@@ -3,22 +3,15 @@ from time import time
 import cv2 as cv
 import numpy as np
 
-from drowsiness.detection.detector import (
-    AbstractDetector,
-    DETECTOR_FHOG,
-    PREDICTOR_FACE_68,
-)
+from drowsiness.detection.detector import DlibDetector
+from classification.detection_data import DetectionData
 
 
-INNER_LIP = slice(60, 68)
 OUTER_LIP = slice(48, 60)
+INNER_LIP = slice(60, 68)
 
 
-def point_tuple(point):
-    return (point.x, point.y)
-
-
-class MouthDetector(AbstractDetector):
+class MouthDetector(DlibDetector):
     def __init__(self, fps=24, min_area=200, min_duration=4) -> None:
         self._frame_rate = fps
         self._frame_length = 1 / fps
@@ -26,18 +19,24 @@ class MouthDetector(AbstractDetector):
         self._yawn_area = min_area
         self._yawn_duration = min_duration
 
-        self._detector = DETECTOR_FHOG
-        self._predictor = PREDICTOR_FACE_68
+    def _handle_frame(self, frame):
+        faces = self._detect_faces(frame)
 
-    def _detect_faces(self, source):
-        faces = self._detector(source)
+        data = {}
 
-        return faces
+        for face in faces:
+            landmarks = self._detect_landmarks(frame, face)
+            landmarks = np.array(landmarks.parts())
 
-    def _detect_landmarks(self, source, face):
-        landmarks = self._predictor(source, face)
+            inner = np.array(
+                [self.point_tuple(point) for point in landmarks[INNER_LIP]]
+            )
 
-        return landmarks
+            data["inner_area"] = cv.contourArea(inner)
+            data["vertical_aperture"] = cv.norm(inner[2] - inner[-2])
+            data["horizontal_aperture"] = cv.norm(inner[0] - inner[4])
+
+        return data
 
     def execute(self, images):
         detection_data = {"yawn_count": 0, "yawn_frame_count": 0}
@@ -63,35 +62,15 @@ class MouthDetector(AbstractDetector):
             detection_data["yawn_frame_count"] * self._frame_length
         )
 
-        maximum = np.max(area)
+        maximum = np.max([data["inner_area"] for data in frame_data])
         area = np.array(
-            [(data["inner_area"] - 0) / (maximum - 0)] for data in frame_data
+            ((data["inner_area"] - 0) / (maximum - 0)) for data in frame_data
         )
 
         result = np.mean(area)
+        detection_data["frames"] = frame_data
 
-        return {
-            "result": result,
-            **detection_data,
-            "frames": frame_data,
-        }  # TO-DO Converter saída para drowsiness.DetectionData()
-
-    def _handle_frame(self, image):
-        faces = self._detect_faces(image)
-
-        data = {}
-
-        for face in faces:
-            landmarks = self._detect_landmarks(image, face)
-            landmarks = np.array(landmarks.parts())
-
-            inner = np.array([point_tuple(point) for point in landmarks[INNER_LIP]])
-
-            data["inner_area"] = cv.contourArea(inner)
-            data["vertical_aperture"] = cv.norm(inner[2] - inner[-2])
-            data["horizontal_aperture"] = cv.norm(inner[0] - inner[4])
-
-        return data
+        return DetectionData(result, detection_data)
 
 
 if __name__ == "__main__":
@@ -101,7 +80,7 @@ if __name__ == "__main__":
         print("Erro ao abrir a camera")
         exit()
 
-    mouth = MouthDetector()
+    detector = MouthDetector()
     prev = 0
     capture = True
     while capture:
@@ -117,13 +96,11 @@ if __name__ == "__main__":
         if key == ord("q"):
             cap.release()
             capture = False
-        elif key == ord("r"):
-            testing = not testing
 
-        if time_elapsed > 1.0 / mouth._frame_rate:
+        if time_elapsed > 1.0 / detector._frame_rate:
             prev = time()
 
-            data = mouth._handle_frame(frame)
+            data = detector._handle_frame(frame)
 
             y = 20
             for key, value in data.items():

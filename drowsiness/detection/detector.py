@@ -12,6 +12,25 @@ DETECTOR_FHOG = dlib.get_frontal_face_detector()
 
 class AbstractDetector(ABC):
     @abstractmethod
-    def execute(self, source):
+    def execute(self, images):
         pass
 
+class DlibDetector(AbstractDetector):
+
+    def __init__(self) -> None:        
+        self._detector = DETECTOR_FHOG
+        self._predictor = PREDICTOR_FACE_68
+
+    def _detect_faces(self, source):
+        faces = self._detector(source)
+
+        return faces
+
+    def _detect_landmarks(self, source, face):
+        landmarks = self._predictor(source, face)
+
+        return landmarks
+    
+    def point_tuple(point):
+        """Auxiliary method to convert Dlib Point object into coordinate tuple used by OpenCV"""
+        return (point.x, point.y)
