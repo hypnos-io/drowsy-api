@@ -1,6 +1,6 @@
 import cv2 as cv
 
-from drowsy_types import CV2Image
+from drowsiness.drowsy_types import CV2Image
 
 from image_handler import ImageHandler
 

@@ -2,7 +2,7 @@ import cv2 as cv
 
 from types import Optional
 from image_handler import ImageHandler
-from drowsy_types import CV2Image, Dimension
+from drowsiness.drowsy_types import CV2Image, Dimension
 
 
 class ResizeHandler(ImageHandler):

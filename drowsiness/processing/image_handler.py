@@ -5,7 +5,7 @@ Image Handlers
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from drowsy_types import CV2Image
+from drowsiness.drowsy_types import CV2Image
 
 
 class ImageHandler(ABC):

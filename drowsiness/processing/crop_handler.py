@@ -1,7 +1,7 @@
 import cv2 as cv
 
 from image_handler import ImageHandler
-from drowsy_types import CV2Image
+from drowsiness.drowsy_types import CV2Image
 
 
 class CropHandler(ImageHandler):
