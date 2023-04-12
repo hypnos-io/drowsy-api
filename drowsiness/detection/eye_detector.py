@@ -1,144 +1,125 @@
+from time import time
+
 import cv2 as cv
 import numpy as np
-import dlib
-from scipy.spatial import distance
 
-import os
-import glob
-from api.detector import Detector
+from drowsiness.detection.detector import DlibDetector
 from classification.detection_data import DetectionData
-from multiprocessing import Pool
+
+LEFT_EYE = slice(36, 42)
+RIGHT_EYE = slice(42, 48)
 
 
-def load_image(image):
-    return cv.imread(image, cv.IMREAD_GRAYSCALE)
+class EyeDetector(DlibDetector):
+    def __init__(self, blink_threshold, fps=10, ear_threshold=0.20):
+        self._frame_rate = fps
+        self._frame_length = 1 / fps
 
+        self._ear_treshhold = ear_threshold
+        self._blink_threshold = blink_threshold
 
-# def create_frame_list(local, extension):
-#    images = glob.glob(f"detection/api/frames/{local}/*.{extension}")
-#    frames = [cv.imread(image, cv.IMREAD_GRAYSCALE) for image in images]
+    def _calculate_ear(self, eye):
+        vertical_distl = np.linalg.norm(eye[1] - eye[-1])
+        vertical_distr = np.linalg.norm(eye[2] - eye[-2])
+        horizontal_dist = np.linalg.norm(eye[0] - eye[3])
 
-#    return frames
+        eye_aspect_ratio = (vertical_distl + vertical_distr) / (2.0 * horizontal_dist)
 
+        return eye_aspect_ratio
 
-def create_frame_list(location, extension):
-    images = glob.glob(f"detection/api/frames/{location}/*.{extension}")
+    def _handle_frame(self, frame):
+        faces = self._detect_faces(frame)
 
-    frames = [cv.imread(image) for image in images]
+        data = {}
 
-    frames = [cv.cvtColor(frame, cv.COLOR_BGR2RGB) for frame in frames]
+        for face in faces:
+            landmarks = self._detect_landmarks(frame, face)
+            landmarks = np.array(landmarks.parts())
 
-    return frames
+            left_eye = np.array(
+                [self.point_tuple(point) for point in landmarks[LEFT_EYE]]
+            )
+            right_eye = np.array(
+                [self.point_tuple(point) for point in landmarks[RIGHT_EYE]]
+            )
 
+            left_ear = self._calculate_ear(left_eye)
+            right_ear = self._calculate_ear(right_eye)
 
-class EyeDetector(Detector):
-    def __init__(
-        self,
-        closed_eyes_threshold,
-        blink_threshold,
-        landmarks_model_path,
-        fps=10,
-        eye_ratio_threshold=0.20,
-    ):
-        self.landmarks_model_path = (
-            f"{landmarks_model_path}/shape_predictor_68_face_landmarks.dat"
-        )
-        self.dlib_facelandmark = dlib.shape_predictor(self.landmarks_model_path)
-        self.closed_eyes_threshold = closed_eyes_threshold
-        self.eye_ratio_threshold = eye_ratio_threshold
-        self.hog_face_detector = dlib.get_frontal_face_detector()
-        self.frames = []
-        self.fps = fps
-        self.blink_threshold = blink_threshold
-
-    def calculate_ear(self, eye):
-        eye = np.array(eye)
-        p2_minus_p6 = np.linalg.norm(eye[1] - eye[5])
-        p3_minus_p5 = np.linalg.norm(eye[2] - eye[4])
-        p1_minus_p4 = np.linalg.norm(eye[0] - eye[3])
-
-        ear_aspect_ratio = (p2_minus_p6 + p3_minus_p5) / (2.0 * p1_minus_p4)
-        return ear_aspect_ratio
-
-    def get_eyes(self, frame, face):
-        face_landmarks = self.dlib_facelandmark(frame, face)
-        left_eye = []
-        right_eye = []
-
-        for n in range(36, 42):
-            x = face_landmarks.part(n).x
-            y = face_landmarks.part(n).y
-            left_eye.append((x, y))
-
-        for n in range(42, 48):
-            x = face_landmarks.part(n).x
-            y = face_landmarks.part(n).y
-            right_eye.append((x, y))
-
-        return left_eye, right_eye
-
-    def __detect__(self, frames):
-        if len(frames) <= 0:
-            raise ValueError("Lista de frames vazia. Por favor, verifique.")
-
-        eye_closed_time = 0
-        eye_opened_time = 0
-        consecutive_frames = 0
-        total_eye_closed_time = 0
-        blink_count = 0
-        ear_mean = 0
-        fr = 0
-
-        for frame in frames:
-            faces = self.hog_face_detector(frame)
-            fr += 1
-
-            for face in faces:
-                left_eye, right_eye = self.get_eyes(frame, face)
-
-                left_ear = self.calculate_ear(left_eye)
-                right_ear = self.calculate_ear(right_eye)
-
-                EAR = (left_ear + right_ear) / 2
-                EAR = round(EAR, 2)
-                ear_mean += EAR
-                print(f"FRAME {fr} | EAR: {EAR}")
-
-                if EAR < self.eye_ratio_threshold:
-                    consecutive_frames += 1
-                    print(f":{consecutive_frames}")
-
-                    if consecutive_frames >= self.closed_eyes_threshold:
-                        print(f"eyes closed at frame {fr}")
-                        eye_closed_time += 1 / self.fps
-                        total_eye_closed_time += eye_closed_time
-                        eye_opened_time = 0
-
-                else:
-                    if consecutive_frames >= self.blink_threshold:
-                        blink_count += 1
-                    consecutive_frames = 0
-
-                    if eye_closed_time > 0:
-                        eye_opened_time += 1 / self.fps
-                        if eye_opened_time > 1.0:
-                            eye_closed_time = 0
-                            eye_opened_time = 0
-
-        ear_mean = ear_mean / len(frames)
-        return total_eye_closed_time, blink_count, ear_mean
-
-    def execute(self, frames):
-        """Executes the Eye detection"""
-        if len(frames) <= 0:
-            raise ValueError("Lista de frames vazia")
-        time, blink, ear = self.__detect__(frames)
-        detection_dict = {
-            "blinks": blink,
-            "closed_eyes": round(time, 4),
-            "eye_opening": round(ear, 2),
-        }
-
-        data = DetectionData(0, detection_dict)
+            data["ear"] = np.mean((left_ear, right_ear))
 
         return data
+
+    def execute(self, images):
+        detection_data = {"blink_count": 0, "closed_frame_count": 0}
+
+        frame_data = []
+        blink_frames = 0
+        for frame in images:
+            data = self._handle_frame(frame)
+
+            if data["ear"] < self._ear_treshhold:
+                blink_frames += 1
+                detection_data["closed_frame_count"] += 1
+            else:
+                if blink_frames >= self._blink_threshold:
+                    detection_data["blink_count"] += 1
+                blink_frames = 0
+
+            frame_data.append(data)
+
+        detection_data["ear_mean"] = np.mean(data["ear"] for data in frame_data)
+        detection_data["closed_time"] = (
+            detection_data["closed_frame_count"] * self._frame_length
+        )
+
+        result = 0
+        return DetectionData(result, detection_data)
+
+
+if __name__ == "__main__":
+    cap = cv.VideoCapture(0)
+
+    if not cap.isOpened():
+        print("Erro ao abrir a camera")
+        exit()
+
+    detector = EyeDetector(1)
+    prev = 0
+    capture = True
+    while capture:
+        time_elapsed = time() - prev
+        ret, frame = cap.read()
+
+        if not ret:
+            print("Não foi possivel capturar imagens da camera. Encerrando execução.")
+            break
+
+        key = cv.waitKey(1)
+
+        if key == ord("q"):
+            cap.release()
+            capture = False
+
+        if time_elapsed > 1.0 / detector._frame_rate:
+            prev = time()
+
+            data = detector._handle_frame(frame)
+
+            y = 20
+            for key, value in data.items():
+                cv.putText(
+                    frame,
+                    f"{key}: {int(value)}",
+                    (10, y),
+                    cv.FONT_HERSHEY_SIMPLEX,
+                    0.8,
+                    (255, 0, 0),
+                    1,
+                    2,
+                )
+                y += 20
+
+            cv.imshow("frame", frame)
+
+    cv.destroyAllWindows()
