@@ -32,61 +32,29 @@ class HeadDetector(Detector):
         if angle < 0:
             angle = angle * -1
 
-        return angle     
-
-    def head_inclination(
-            self, 
-            landmarks,  
-            head_soft_count,
-            head_hard_count,
-            inclination_middle_threshold=30, 
-            inclination_bottom_threshold=50):
-        l_ear = [landmarks[self.mp_pose.PoseLandmark.LEFT_EAR.value].x, landmarks[self.mp_pose.PoseLandmark.LEFT_EAR.value].y]
-        r_ear = [landmarks[self.mp_pose.PoseLandmark.RIGHT_EAR.value].x, landmarks[self.mp_pose.PoseLandmark.RIGHT_EAR.value].y]
-
-        angle = self.calculate_head_inclination(r_ear, l_ear)
-
-        # HEAD INCLINATION DETECTIONS
-        if angle <= inclination_middle_threshold:
-            head_soft_count += 1
-        elif inclination_middle_threshold < angle < inclination_bottom_threshold:
-            head_hard_count += 1
-        else:
-            pass
-            
-        return head_soft_count, head_hard_count
+        return angle
             
     def head_detection(
             self, 
             frames, 
             angle_threshold=110, 
-            inclination_pos1_threshold=30, 
-            inclination_pos2_threshold=50,
+            inclination_side_threshold=40, 
             consec_frames_threshold_angle=2,
-            consec_pos1_threshold_angle=2,
-            consec_pos2_threshold_angle=2):
+            consec_side_threshold_angle=2):
 
         with self.mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
 
-            # HEAD INCLINATION (POS 0, 1, 2)
-            head_pos0_time = 0
 
-            head_pos1_time = 0
-            consecutive_pos1_frames = 0
-            total_pos1_time = 0
-            pos1_threshold = 2
-
-            head_pos2_time = 0
-            consecutive_pos2_frames = 0
-            total_pos2_time = 0
-            pos2_threshold = 2
-
+            head_inclination_up_time = 0
+            head_inclination_down_time = 0
+            consecutive_inclination_down_frames = 0
+            total_inclination_down_time = 0
 
             # HEAD ANGLE (UP AND DOWN)
-            head_down_time = 0
-            head_up_time = 0 
-            consecutive_angle_frames = 0
-            total_head_angle_time = 0
+            head_angle_up_time = 0 
+            head_angle_down_time = 0
+            consecutive_angle_down_frames = 0
+            total_angle_down_time = 0
 
             for frame in frames:
                 image  = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -106,24 +74,23 @@ class HeadDetector(Detector):
                 l_ear = [landmarks[self.mp_pose.PoseLandmark.LEFT_EAR.value].x, landmarks[self.mp_pose.PoseLandmark.LEFT_EAR.value].y]
 
                 angle = self.calculate_head_angle(r_ear, nose, l_ear)
-                #print(angle)
                 
                 if angle > angle_threshold:
-                    consecutive_angle_frames += 1
+                    consecutive_angle_down_frames += 1
 
-                    if consecutive_angle_frames == consec_frames_threshold_angle:
-                        head_down_time += 1 / len(frames)
-                        total_head_angle_time += head_down_time
-                        head_up_time = 0
+                    if consecutive_angle_down_frames == consec_frames_threshold_angle:
+                        head_angle_down_time += 1 / len(frames)
+                        total_angle_down_time += head_angle_down_time
+                        head_angle_up_time = 0
 
                 else:
-                    consecutive_angle_frames = 0
+                    consecutive_angle_down_frames = 0
 
-                    if head_up_time > 0:
-                        head_down_time += 1 / len(frames)
-                        if head_down_time > 1.0:
-                            head_down_time = 0
-                            head_up_time = 0
+                    if head_angle_up_time > 0:
+                        head_angle_down_time += 1 / len(frames)
+                        if head_angle_down_time > 1.0:
+                            head_angle_down_time = 0
+                            head_angle_up_time = 0
 
                 # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-
 
@@ -133,35 +100,23 @@ class HeadDetector(Detector):
 
                 angle = self.calculate_head_inclination(r_ear, l_ear)
 
-                if angle <= inclination_pos1_threshold:
-                    consecutive_pos1_frames += 1
+                if angle <= inclination_side_threshold:
+                    consecutive_inclination_down_frames += 1
 
-                    if consecutive_pos1_frames == consec_pos1_threshold_angle:
-                        head_pos1_time += 1 / len(frames)
-                        total_pos1_time += head_pos1_time
-                        head_pos0_time = 0
-
-                elif inclination_pos1_threshold < angle < inclination_pos2_threshold:
-                    consecutive_pos2_frames += 1
-
-                    if consecutive_pos2_frames == consec_pos2_threshold_angle:
-                        head_pos2_time += 1 / len(frames)
-                        total_pos2_time += head_pos2_time
-                        head_pos0_time = 0
+                    if consecutive_inclination_down_frames == consec_side_threshold_angle:
+                        head_inclination_down_time += 1 / len(frames)
+                        total_inclination_down_time += head_inclination_down_time
+                        head_inclination_up_time = 0
                 else:
-                    consecutive_pos1_frames = 0
-                    consecutive_pos2_frames = 0
+                    consecutive_inclination_down_frames = 0
                     
-                    if head_pos0_time > 0:
-                        head_pos1_time += 1 / len(frames)
-                        head_pos2_time += 1 / len(frames)
+                    if head_inclination_up_time > 0:
+                        head_inclination_down_time += 1 / len(frames)
+                        if head_inclination_down_time > 1.0:
+                            head_inclination_down_time = 0
+                            head_inclination_up_time = 0
 
-                        if head_pos0_time > 1.0:
-                            head_pos0_time = 0
-                            head_pos1_time = 0
-                            head_pos2_time = 0
-
-        return total_head_angle_time, total_pos1_time, total_pos2_time
+        return total_angle_down_time, total_inclination_down_time
 
 
 
@@ -170,11 +125,10 @@ class HeadDetector(Detector):
 
     def execute(self, frames):
         "Executes the Head detection"
-        total_head_angle_time, total_pos1_time, total_pos2_time = self.head_detection(frames)
+        total_angle_down_time, total_inclination_down_time = self.head_detection(frames)
         result_dict = {
-            "Total Head Angle Time": total_head_angle_time,
-            "Total Pos1": total_pos1_time,
-            "Total pos2": total_pos2_time
+            "Total Head Angle Time": total_angle_down_time,
+            "Total Head Inclination Time": total_inclination_down_time,
         }
         
         return result_dict
