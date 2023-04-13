@@ -1,8 +1,8 @@
 import asyncio
 import socketio
 from time import sleep
-from websockets.events.connection import on_connection, disconnect, connect_error
-from websockets.events.fatigue import receive_images
+from connectionSocket.events.connection import on_connection, disconnect, connect_error
+from connectionSocket.events.fatigue import receive_images
 
 sio = socketio.AsyncClient()
 
