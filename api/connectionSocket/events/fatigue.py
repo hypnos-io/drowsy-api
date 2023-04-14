@@ -43,6 +43,7 @@ async def send_response(sio, response: SocketDataResponse):
 async def receive_images(sio, data):
     request = SocketDataRequest(id=data['id'], employee_id=data['employeeId'], workstation=data['workstation'], images=data['images'])
     rgb_image = base64_2_cvimage(request.images[0])
+    print(rgb_image)
 
     '''
     status = DrowsinessDetection().detectDrowsiness([rgb_image], fps)

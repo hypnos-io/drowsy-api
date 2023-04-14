@@ -5,7 +5,6 @@ async function openCam() {
     return;
   }
   All_mediaDevices.getUserMedia({
-    audio: true,
     video: true
   })
     .then(function (vidStream) {
@@ -36,6 +35,6 @@ async function captureFrame(video) {
   await socket.emit('sendFrame', { image: dataUrl });
   setTimeout(function () {
     captureFrame(video);
-  }, 1000); // capture a frame every 1000 milliseconds (1 second)
+  }, 100); // capture a frame every 100 milliseconds (1 second)
 }
 
