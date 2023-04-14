@@ -1,5 +1,8 @@
 from domain.entities.fatigue import FatigueStatus, example_status
 from base64_functions import base64_2_cvimage
+import sys
+sys.path.append('C:/Users/callidus/Desktop/Repositórios Github/drowsy-api/drowsiness')
+import drowsiness
 
 class SocketDataRequest:
     def __init__(self, id: str, employee_id: str, workstation: str, images: list[str]):
@@ -43,10 +46,16 @@ async def send_response(sio, response: SocketDataResponse):
 async def receive_images(sio, data):
     request = SocketDataRequest(id=data['id'], employee_id=data['employeeId'], workstation=data['workstation'], images=data['images'])
     rgb_image = base64_2_cvimage(request.images[0])
-    print(rgb_image)
-
+    status = drowsiness.DrowsinessDetection()
+    status.detectDrowsiness([rgb_image])
+    
     '''
-    status = DrowsinessDetection().detectDrowsiness([rgb_image], fps)
+    status = DrowsinessDetection()
+    status = DrowsinessDetection().detectDrowsiness([rgb_image], fps) se cada rgb image for uma lista
+    status = DrowsinessDetection().detectDrowsiness(rgb_image, fps) se cada rbg image for enviado separadamente
+    DrowsinessDetection().detectDrowsiness(rgb_image, fps) se o método não retornar nada
+    DrowsinessDetection().detectDrowsiness([rgb_image], fps)
+
     '''
 
     response = SocketDataResponse(id=request.id, 
