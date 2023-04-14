@@ -1,10 +1,12 @@
 from time import time
+import sys
+sys.path.append(r'C:/Users/Callidus/Documents/drowsy-api')
 
 import cv2 as cv
 import numpy as np
 
 from drowsiness.detection.detector import DlibDetector
-from classification.detection_data import DetectionData
+from drowsiness.classification.detection_data import DetectionData
 
 
 OUTER_LIP = slice(48, 60)
@@ -13,6 +15,7 @@ INNER_LIP = slice(60, 68)
 
 class MouthDlibDetector(DlibDetector):
     def __init__(self, fps=24, min_area=200, min_duration=4) -> None:
+        super().__init__()
         self._frame_rate = fps
         self._frame_length = 1 / fps
 
