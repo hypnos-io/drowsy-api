@@ -1,10 +1,14 @@
 from time import time
+import sys
+sys.path.append(r'C:/Users/Callidus/Documents/drowsy-api')
+
 
 import cv2 as cv
 import numpy as np
 
-from drowsiness.detection.detector import DlibDetector
-from classification.detection_data import DetectionData
+from detector import DlibDetector
+from drowsiness.classification.detection_data import DetectionData
+
 
 LEFT_EYE = slice(36, 42)
 RIGHT_EYE = slice(42, 48)
@@ -12,6 +16,7 @@ RIGHT_EYE = slice(42, 48)
 
 class EyeDlibDetector(DlibDetector):
     def __init__(self, blink_threshold, fps=10, ear_threshold=0.20):
+        super().__init__()
         self._frame_rate = fps
         self._frame_length = 1 / fps
 
@@ -47,6 +52,7 @@ class EyeDlibDetector(DlibDetector):
             right_ear = self._calculate_ear(right_eye)
 
             data["ear"] = np.mean((left_ear, right_ear))
+            print(data["ear"])
 
         return data
 
@@ -110,7 +116,7 @@ if __name__ == "__main__":
             for key, value in data.items():
                 cv.putText(
                     frame,
-                    f"{key}: {int(value)}",
+                    f"{key}: {value:.2f}",
                     (10, y),
                     cv.FONT_HERSHEY_SIMPLEX,
                     0.8,
