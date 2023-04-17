@@ -1,8 +1,10 @@
+import time
 from domain.entities.fatigue import FatigueStatus, example_status
 from base64_functions import base64_2_cvimage
 import sys
-sys.path.append('C:/Users/callidus/Desktop/Repositórios Github/drowsy-api/drowsiness')
-import drowsiness
+sys.path.append('C:/Users/callidus/Desktop/Repositórios Github/drowsy-api')
+from drowsiness.drowsiness import DrowsinessDetection
+from config import status
 
 class SocketDataRequest:
     def __init__(self, id: str, employee_id: str, workstation: str, images: list[str]):
@@ -42,21 +44,23 @@ async def send_response(sio, response: SocketDataResponse):
     print(f'[WS] Enviando resposta de {response.employee_id} para Hypnos API')
     await sio.emit('notify-status', response.get_dictionary())
 
-
 async def receive_images(sio, data):
+    global status
     request = SocketDataRequest(id=data['id'], employee_id=data['employeeId'], workstation=data['workstation'], images=data['images'])
-    rgb_image = base64_2_cvimage(request.images[0])
-    status = drowsiness.DrowsinessDetection()
-    status.detectDrowsiness([rgb_image])
-    
-    '''
-    status = DrowsinessDetection()
-    status = DrowsinessDetection().detectDrowsiness([rgb_image], fps) se cada rgb image for uma lista
-    status = DrowsinessDetection().detectDrowsiness(rgb_image, fps) se cada rbg image for enviado separadamente
-    DrowsinessDetection().detectDrowsiness(rgb_image, fps) se o método não retornar nada
-    DrowsinessDetection().detectDrowsiness([rgb_image], fps)
+    bgr_image = base64_2_cvimage(request.images[0])
 
-    '''
+    if status == None:
+        status = DrowsinessDetection()
+   # print(status.detectDrowsiness(bgr_image, 10)) # o valor bgr do frame está sendo utilizado como parâmetro do método detectDrowsiness
+                                              # e impresso
+
+    if len(status.getFPF()) == 0:
+        status.setFPF((time.perf_counter(), 0))
+
+    else:
+        status.setFPF((time.perf_counter(), time.perf_counter() - (status.getFPF()[len(status.getFPF()) - 1])[0]))
+
+    # print(status.getFPF())
 
     response = SocketDataResponse(id=request.id, 
                                   employee_id=request.employee_id, 

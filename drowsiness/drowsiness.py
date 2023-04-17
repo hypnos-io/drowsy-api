@@ -1,22 +1,17 @@
-# list_rgb = [] # variável global que armazena os frames
-
-
 class DrowsinessDetection:
     def __init__(self) -> None:
         # self._eye =
         # self._mouth =
         # self._head =
-        # list_fps = [] # possível variável que armazena os fps ou então o tempo entre frames
+        self.__list_FPF = [] # essa lista armazenará tuplas nas quais constarão o horário em segundos quando o frame foi enviado
+                             # e a diferença de tempo do envio do frame anterior e o atual
         ...
 
-    def detectDrowsiness(rgb_img, fps):
-       # list_rgb.append(rgb_img)
-       # list_fps.append(fps)
+    def detectDrowsiness(self, bgr_img, fps): # métodos cujos argumentos são o frame recebido em formato bgr e o valor do fps
+       return bgr_img
+    
+    def setFPF(self, fpf):
+        self.__list_FPF.append(fpf) 
 
-       # return rgb_img
-       # return fps
-       # return (rgb_img, fps)
-       # return list_rgb
-       # return list_fps
-       # return (list_rgb, list_fps)
-       print(rgb_img)
+    def getFPF(self):
+        return self.__list_FPF
