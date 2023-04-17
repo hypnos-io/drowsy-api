@@ -5,10 +5,11 @@ import cv2 as cv
 
 
 class HeadDetector(AbstractDetector):
-    def __init__(self, head_ratio_threshold):
+    def __init__(self, head_ratio_threshold, fps=10):
         self.head_ratio_threshold = head_ratio_threshold
         self.mp_pose = mp.solutions.pose
         self.frames = []
+        self.fps = fps
 
     def calculate_head_angle(self, a, b, c):
         a = np.array(a)
@@ -25,7 +26,7 @@ class HeadDetector(AbstractDetector):
 
         return angle
 
-    def calculate_head_inclination(self, a, b):
+    def __calculate_head_inclination__(self, a, b):
         a = np.array(a)
         b = np.array(b)
 
@@ -37,7 +38,7 @@ class HeadDetector(AbstractDetector):
 
         return angle
             
-    def head_detection(
+    def __head_detection__(
             self, 
             frames, 
             angle_threshold=110, 
@@ -52,12 +53,14 @@ class HeadDetector(AbstractDetector):
             head_inclination_down_time = 0
             consecutive_inclination_down_frames = 0
             total_inclination_down_time = 0
+            head_inclination_mean = 0
 
             # HEAD ANGLE (UP AND DOWN)
             head_angle_up_time = 0 
             head_angle_down_time = 0
             consecutive_angle_down_frames = 0
             total_angle_down_time = 0
+            head_angle_mean = 0
 
             for frame in frames:
                 image = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
@@ -85,6 +88,7 @@ class HeadDetector(AbstractDetector):
                 ]
 
                 angle = self.calculate_head_angle(r_ear, nose, l_ear)
+                head_angle_mean += angle
                 
                 if angle > angle_threshold:
                     consecutive_angle_down_frames += 1
@@ -115,8 +119,8 @@ class HeadDetector(AbstractDetector):
                     landmarks[self.mp_pose.PoseLandmark.RIGHT_EAR.value].y,
                 ]
 
-                angle = self.calculate_head_inclination(r_ear, l_ear)
-                tilt.append(angle)
+                angle = self.__calculate_head_inclination__(r_ear, l_ear)
+                head_inclination_mean += angle
 
                 if angle <= inclination_side_threshold:
                     consecutive_inclination_down_frames += 1
@@ -134,19 +138,25 @@ class HeadDetector(AbstractDetector):
                             head_inclination_down_time = 0
                             head_inclination_up_time = 0
 
-        return total_angle_down_time, total_inclination_down_time
 
+        total_angle_down_time = total_angle_down_time / self.fps
+        total_inclination_down_time = total_inclination_down_time / self.fps
+        head_angle_mean = head_angle_mean/len(frames)
+        head_inclination_mean = head_inclination_mean/len(frames)
 
+        return total_angle_down_time, total_inclination_down_time, head_angle_mean, head_inclination_mean
 
-    def cropROI(self, source):
-        pass
 
     def execute(self, frames):
+        if len(frames) <= 0:
+            raise ValueError("Lista de frames vazia")
         "Executes the Head detection"
-        total_angle_down_time, total_inclination_down_time = self.head_detection(frames)
+        TADT, TIDT, HAM, HIM = self.__head_detection__(frames)
         result_dict = {
-            "Total Head Angle Time": total_angle_down_time,
-            "Total Head Inclination Time": total_inclination_down_time,
+            "Total Head Angle Time": round(TADT, 4),
+            "Total Head Inclination Time": round(TIDT, 4),
+            "Head Angle Mean": round(HAM, 2),
+            "Head Inclination Mean": round(HIM, 2)
         }
 
         return result_dict
