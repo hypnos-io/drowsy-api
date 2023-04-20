@@ -21,7 +21,7 @@ def create_frame_list(location, extension):
         return frames
 
 class HeadDetector(AbstractDetector):
-    def __init__(self, head_down_threshold=70, fps=10, eye_ratio_threshold=0.22):
+    def __init__(self, head_down_threshold=70, fps=60, eye_ratio_threshold=0.22):
         self.head_down_threshold = head_down_threshold
         self.eye_ratio_threshold = eye_ratio_threshold
         self.frames = []
@@ -45,23 +45,113 @@ class HeadDetector(AbstractDetector):
 
         return right_ear_positions, left_ear_positions, nose_positions
     
-    def __detect__(self, frames):
+    def __calculate_head_angle__(self, a, b, c):
+        a = np.array(a)
+        b = np.array(b)
+        c = np.array(c)
+
+        radians = np.arctan2(c[1] - b[1], c[0] - b[0]) - np.arctan2(
+            a[1] - b[1], a[0] - b[0]
+        )
+        angle = np.abs(radians * 180.0 / np.pi)
+
+        if angle > 180.0:
+            angle = 360 - angle
+
+        return angle
+
+    def __calculate_head_inclination__(self, a, b):
+        a = np.array(a)
+        b = np.array(b)
+
+        radians = np.arctan2(b[1] - a[1], b[0] - a[0])
+        angle = np.degrees(radians)
+
+        if angle < 0:
+            angle = angle * -1
+
+        return angle
+    
+    def __detect__(
+            self, 
+            frames,
+            angle_threshold=110, 
+            inclination_side_threshold=40, 
+            consec_frames_threshold_angle=2,
+            consec_side_threshold_angle=2):
+
+        # HEAD INCLINATION 
+        head_inclination_up_time = 0
+        head_inclination_down_time = 0
+        consecutive_inclination_down_frames = 0
+        total_inclination_down_time = 0
+        head_inclination_mean = 0
+
+        # HEAD ANGLE 
+        head_angle_up_time = 0 
+        head_angle_down_time = 0
+        consecutive_angle_down_frames = 0
+        total_angle_down_time = 0
+        head_angle_mean = 0
+
+        fr = 0
 
         for frame in frames:
-            total_angle_down_time = 0
-            total_inclination_down_time = 0
-            head_angle_mean = 0
-            head_inclination_mean = 0
 
+            fr += 1
 
-            results = self.pose_images.process(frame[:,:,::-1])
+            image = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+            image.flags.writeable = False
+
+            results = self.pose_images.process(image)
+
+            image.flags.writeable = True
+            image = cv.cvtColor(image, cv.COLOR_RGB2BGR)
+
             if results.pose_landmarks:
                 for pose_landmarks in results.pose_landmarks:
                     right_ear_pos, left_ear_pos, nose_pos = self.__get_eyes__(results, frame)
+                    head_angle = self.__calculate_head_angle__(right_ear_pos, nose_pos, left_ear_pos)
+                    head_inclination = self.__calculate_head_inclination__(right_ear_pos, left_ear_pos)
                     print("=-=-=-=-=-=-=-=")
                     print("Right Ear Pos: " + right_ear_pos)
                     print("Left Ear Pos: " + left_ear_pos)
                     print("Nose Pos: " + nose_pos)
+
+                    # Head Angle
+                    if head_angle > angle_threshold:
+                        consecutive_angle_down_frames += 1
+
+                        if consecutive_angle_down_frames == consec_frames_threshold_angle:
+                            head_angle_down_time += 1 / len(frames)
+                            total_angle_down_time += head_angle_down_time
+                            head_angle_up_time = 0
+
+                    else:
+                        consecutive_angle_down_frames = 0
+
+                        if head_angle_up_time > 0:
+                            head_angle_down_time += 1 / len(frames)
+                            if head_angle_down_time > 1.0:
+                                head_angle_down_time = 0
+                                head_angle_up_time = 0
+
+                    # Head Inclination
+                    if head_inclination <= inclination_side_threshold:
+                        consecutive_inclination_down_frames += 1
+
+                        if consecutive_inclination_down_frames == consec_side_threshold_angle:
+                            head_inclination_down_time += 1 / len(frames)
+                            total_inclination_down_time += head_inclination_down_time
+                            head_inclination_up_time = 0
+                    else:
+                        consecutive_inclination_down_frames = 0
+                        
+                        if head_inclination_up_time > 0:
+                            head_inclination_down_time += 1 / len(frames)
+                            if head_inclination_down_time > 1.0:
+                                head_inclination_down_time = 0
+                                head_inclination_up_time = 0
 
         
         total_angle_down_time = total_angle_down_time / self.fps
@@ -69,36 +159,8 @@ class HeadDetector(AbstractDetector):
         head_angle_mean = head_angle_mean/len(frames)
         head_inclination_mean = head_inclination_mean/len(frames)
         return total_angle_down_time, total_inclination_down_time, head_angle_mean, head_inclination_mean
-
-
-    # def __calculate_head_angle__(self, a, b, c):
-    #     a = np.array(a)
-    #     b = np.array(b)
-    #     c = np.array(c)
-
-    #     radians = np.arctan2(c[1] - b[1], c[0] - b[0]) - np.arctan2(
-    #         a[1] - b[1], a[0] - b[0]
-    #     )
-    #     angle = np.abs(radians * 180.0 / np.pi)
-
-    #     if angle > 180.0:
-    #         angle = 360 - angle
-
-    #     return angle
-
-    # def __calculate_head_inclination__(self, a, b):
-    #     a = np.array(a)
-    #     b = np.array(b)
-
-    #     radians = np.arctan2(b[1] - a[1], b[0] - a[0])
-    #     angle = np.degrees(radians)
-
-    #     if angle < 0:
-    #         angle = angle * -1
-
-    #     return angle
             
-    # def __head_detection__(
+    # def __head_detection_old__(
     #         self, 
     #         frames, 
     #         angle_threshold=110, 

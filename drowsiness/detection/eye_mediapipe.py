@@ -99,7 +99,7 @@ P4 \          / P3
         fr = 0
         for frame in frames:
             fr += 1
-            results = self.face_mesh_images.process(frame[:,:,::-1])
+            results = self.face_mesh_images.process(frame)
             if results.multi_face_landmarks:
                 for face_landmarks in results.multi_face_landmarks:
             
