@@ -1,10 +1,11 @@
 import glob
-from drowsiness.detection.detector import AbstractDetector
+from detector import AbstractDetector
 import cv2 as cv
 import itertools
 import numpy as np
 import mediapipe as mp
 import matplotlib.pyplot as plt
+from time import time
 
 def load_image(image):
     return cv.imread(image, v.IMREAD_GRAYSCALE)
@@ -147,3 +148,51 @@ P4 \          / P3
         }
         
         return detection_dict
+
+if __name__ == "__main__":
+
+    cap = cv.VideoCapture(0)
+
+    if not cap.isOpened():
+        print("Erro ao abrir a camera")
+        exit()
+
+    detector = EyeDetector(closed_eyes_threshold=2, blink_threshold=4)
+    prev = 0
+    capture = True
+    while capture:
+        time_elapsed = time() - prev
+        ret, frame = cap.read()
+
+        if not ret:
+            print("Não foi possivel capturar imagens da camera. Encerrando execução.")
+            break
+
+        key = cv.waitKey(1)
+
+        if key == ord("q"):
+            cap.release()
+            capture = False
+
+        if time_elapsed > 1.0 / detector.fps:
+            prev = time()
+
+            data = detector.execute(frame)
+
+            y = 20
+            for key, value in data.items():
+                cv.putText(
+                    frame,
+                    f"{key}: {value:.2f}",
+                    (10, y),
+                    cv.FONT_HERSHEY_SIMPLEX,
+                    0.8,
+                    (255, 0, 0),
+                    1,
+                    2,
+                )
+                y += 20
+
+            cv.imshow("frame", frame)
+
+    cv.destroyAllWindows()

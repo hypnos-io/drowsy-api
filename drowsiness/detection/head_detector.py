@@ -1,17 +1,17 @@
-from drowsiness.detection.detector import AbstractDetector
+from detector import AbstractDetector
 import mediapipe as mp
 import numpy as np
 import cv2 as cv
-
+from time import time
+import sys
 
 class HeadDetector(AbstractDetector):
-    def __init__(self, head_ratio_threshold, fps=10):
-        self.head_ratio_threshold = head_ratio_threshold
+    def __init__(self, fps=10):
         self.mp_pose = mp.solutions.pose
         self.frames = []
         self.fps = fps
 
-    def calculate_head_angle(self, a, b, c):
+    def __calculate_head_angle__(self, a, b, c):
         a = np.array(a)
         b = np.array(b)
         c = np.array(c)
@@ -160,3 +160,50 @@ class HeadDetector(AbstractDetector):
         }
 
         return result_dict
+
+if __name__ == "__main__":
+    cap = cv.VideoCapture(0)
+
+    if not cap.isOpened():
+        print("Erro ao abrir a camera")
+        exit()
+
+    detector = HeadDetector()
+    prev = 0
+    capture = True
+    while capture:
+        time_elapsed = time() - prev
+        ret, frame = cap.read()
+
+        if not ret:
+            print("Não foi possivel capturar imagens da camera. Encerrando execução.")
+            break
+
+        key = cv.waitKey(1)
+
+        if key == ord("q"):
+            cap.release()
+            capture = False
+
+        if time_elapsed > 1.0 / detector.fps:
+            prev = time()
+
+            data = detector.execute(frame)
+
+            y = 20
+            for key, value in data.items():
+                cv.putText(
+                    frame,
+                    f"{key}: {value:.2f}",
+                    (10, y),
+                    cv.FONT_HERSHEY_SIMPLEX,
+                    0.8,
+                    (255, 0, 0),
+                    1,
+                    2,
+                )
+                y += 20
+
+            cv.imshow("frame", frame)
+
+    cv.destroyAllWindows()
