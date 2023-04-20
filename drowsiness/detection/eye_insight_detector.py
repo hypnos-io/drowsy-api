@@ -7,8 +7,8 @@ from detector import InsightDetector
 from drowsiness.classification.detection_data import DetectionData
 
 # [0]P1 [1]P2 [2]P3 [3]P4 [4]P5 [5]P6
-left_points = [35, 41, 42, 39, 37, 36]
-right_points = [89, 95, 96, 93, 91, 90]
+left_points = np.array([35, 41, 42, 39, 37, 36])
+right_points = np.array([89, 95, 96, 93, 91, 90])
 
 class EyeInsightDetector(InsightDetector):
     def __init__(self, blink_threshold, ear_threshold, fps):
