@@ -1,35 +1,38 @@
+import sys
+sys.path.append(r'C:/Users/Callidus/Documents/drowsy-api')
 import glob
-from detector import AbstractDetector
-import cv2 as cv
+from time import time
 import itertools
+
+import cv2 as cv
 import numpy as np
 import mediapipe as mp
-import matplotlib.pyplot as plt
-from time import time
 
-def load_image(image):
-    return cv.imread(image, v.IMREAD_GRAYSCALE)
+from detector import MediapipeDetector
+
+# def load_image(image):
+#     return cv.imread(image, v.IMREAD_GRAYSCALE)
 
 
-def create_frame_list(location, extension):
-        images = glob.glob(f"detection/api/frames/{location}/*.{extension}")
+# def create_frame_list(location, extension):
+#         images = glob.glob(f"detection/api/frames/{location}/*.{extension}")
         
-        frames = [cv.imread(image) for image in images]
+#         frames = [cv.imread(image) for image in images]
         
-        frames = [cv.cvtColor(frame, cv.COLOR_BGR2RGB) for frame in frames]
+#         frames = [cv.cvtColor(frame, cv.COLOR_BGR2RGB) for frame in frames]
 
-        return frames
+#         return frames
 
 
-class EyeDetector(AbstractDetector):
-    def __init__(self, closed_eyes_threshold, blink_threshold, fps=10, eye_ratio_threshold=0.22):
-        self.closed_eyes_threshold = closed_eyes_threshold
-        self.blink_threshold = blink_threshold
-        self.eye_ratio_threshold = eye_ratio_threshold
+class EyeDetector(MediapipeDetector):
+    def __init__(self, blink_threshold, fps=10, ear_threshold=0.20):
+        super().__init__()
+        self._ear_treshhold = ear_threshold
+        self._blink_threshold = blink_threshold
+        
         self.frames = []
-        self.fps = fps
-        self.mp_face_mesh = mp.solutions.face_mesh
-        self.face_mesh_images = self.mp_face_mesh.FaceMesh(max_num_faces=1)
+        self._frame_rate = fps
+        self._frame_length = 1 / self._frame_rate
         
     def __calculate_left_ear__(self, left_eye):
         """Calcula o EAR (Eye Aspect Ratio) do olho esquerdo utilizando a fórmula:
@@ -85,22 +88,14 @@ P4 \          / P3
         right_eye_positions = [(int(l.x * width), int(l.y * height)) for l in right_eye_landmarks]
         
         return left_eye_positions, right_eye_positions
-        
     
-    def __detect__(self, frames):
-        eye_closed_time = 0
-        eye_opened_time = 0
-        consecutive_frames = 0
-        total_eye_closed_time = 0
-        blink_count = 0
-        ear_mean = 0
-        cls_count = 0
-        cnt = 0
-        fr = 0
-        for frame in frames:
-            fr += 1
-            results = self.face_mesh_images.process(frame)
-            if results.multi_face_landmarks:
+    def _handle_frame(self, frame):
+        frame = cv.cvtColor(frame, cv.COLOR_RGB2BGR)
+        results = self.face_mesh_images.process(frame)
+        EAR = 0.0
+        data = {}
+        
+        if results.multi_face_landmarks:
                 for face_landmarks in results.multi_face_landmarks:
             
                     left_eye_pos, right_eye_pos = self.__get_eyes__(results, frame)
@@ -108,56 +103,43 @@ P4 \          / P3
                     right_eye_ear = self.__calculate_right_ear__(right_eye_pos)
                     EAR = (left_eye_ear + right_eye_ear) / 2
                     EAR = round(EAR, 2)
-                    ear_mean += EAR
-                    #print(f"FRAME {fr} | EAR: {EAR}")
-                    
-                    if EAR <= self.eye_ratio_threshold:
-                        consecutive_frames += 1
-                        #print(f":{consecutive_frames}")
-                        
-                        if consecutive_frames >= self.closed_eyes_threshold:
-                            eye_closed_time += 1 / len(frames)  
-                            total_eye_closed_time += 1
-                            eye_opened_time = 0
-                            cls_count += 1
-                            #print(f"eye closed at frame {cls_count}")
-                    else:
-                        if consecutive_frames >= self.blink_threshold:
-                                blink_count += 1
-                        consecutive_frames = 0
-                            
-                        if eye_closed_time > 0:
-                                eye_opened_time += 1 / len(frames)
-                                if eye_opened_time > 1.0:
-                                    eye_closed_time = 0
-                                    eye_opened_time = 0
-                                    
-        ear_mean = ear_mean/len(frames)
-        total_eye_closed_time = total_eye_closed_time / self.fps
-        return total_eye_closed_time, blink_count, ear_mean
+                    data["ear"] = EAR
+        return data
     
-    def execute(self, frames):
-        if len(frames) <= 0:
-            raise ValueError("Lista de frames vazia")
-        "Executes the Eye detection"
-        time, blink, ear = self.__detect__(frames)
-        detection_dict = {
-            "blinks": blink,
-            "closed_eyes": round(time, 4),
-            "eye_opening": round(ear, 2)
-        }
-        
-        return detection_dict
+    def execute(self, images):
+        detection_data = {"blink_count": 0, "closed_frame_count": 0}
+
+        frame_data = []
+        blink_frames = 0
+        for frame in images:
+            data = self._handle_frame(frame)
+
+            if data["ear"] < self._ear_treshhold:
+                blink_frames += 1
+                detection_data["closed_frame_count"] += 1
+            else:
+                if blink_frames >= self._blink_threshold:
+                    detection_data["blink_count"] += 1
+                blink_frames = 0
+
+            frame_data.append(data)
+
+        detection_data["ear_mean"] = np.mean(data["ear"] for data in frame_data)
+        detection_data["closed_time"] = (
+            detection_data["closed_frame_count"] * self._frame_length
+        )
+
+        result = 0
+        return DetectionData(result, detection_data)
 
 if __name__ == "__main__":
-
     cap = cv.VideoCapture(0)
 
     if not cap.isOpened():
         print("Erro ao abrir a camera")
         exit()
 
-    detector = EyeDetector(closed_eyes_threshold=2, blink_threshold=4)
+    detector = EyeDetector(1)
     prev = 0
     capture = True
     while capture:
@@ -174,10 +156,10 @@ if __name__ == "__main__":
             cap.release()
             capture = False
 
-        if time_elapsed > 1.0 / detector.fps:
+        if time_elapsed > 1.0 / detector._frame_rate:
             prev = time()
 
-            data = detector.execute(frame)
+            data = detector._handle_frame(frame)
 
             y = 20
             for key, value in data.items():
@@ -196,3 +178,51 @@ if __name__ == "__main__":
             cv.imshow("frame", frame)
 
     cv.destroyAllWindows()
+
+# if __name__ == "__main__":
+
+#     cap = cv.VideoCapture(0)
+
+#     if not cap.isOpened():
+#         print("Erro ao abrir a camera")
+#         exit()
+
+#     detector = EyeDetector(closed_eyes_threshold=2, blink_threshold=4)
+#     prev = 0
+#     capture = True
+#     while capture:
+#         time_elapsed = time() - prev
+#         ret, frame = cap.read()
+
+#         if not ret:
+#             print("Não foi possivel capturar imagens da camera. Encerrando execução.")
+#             break
+
+#         key = cv.waitKey(1)
+
+#         if key == ord("q"):
+#             cap.release()
+#             capture = False
+
+#         if time_elapsed > 1.0 / detector.fps:
+#             prev = time()
+
+#             data = detector.execute(frame)
+
+#             y = 20
+#             for key, value in data.items():
+#                 cv.putText(
+#                     frame,
+#                     f"{key}: {value:.2f}",
+#                     (10, y),
+#                     cv.FONT_HERSHEY_SIMPLEX,
+#                     0.8,
+#                     (255, 0, 0),
+#                     1,
+#                     2,
+#                 )
+#                 y += 20
+
+#             cv.imshow("frame", frame)
+
+#     cv.destroyAllWindows()
