@@ -52,7 +52,6 @@ class EyeDlibDetector(DlibDetector):
             right_ear = self._calculate_ear(right_eye)
 
             data["ear"] = np.mean((left_ear, right_ear))
-            print(data["ear"])
 
         return data
 

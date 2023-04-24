@@ -1,8 +1,11 @@
 from os import path
 from abc import ABC, abstractmethod
 
-# import dlib
-import mediapipe as mp
+import numpy as np
+import dlib
+import insightface
+from insightface.app import FaceAnalysis
+
 
 MODULE_DIR = path.dirname("c:/Users/Callidus/Documents/drowsy-api/drowsiness/predictor") 
 # path.dirname(path.abspath(__file__))
@@ -15,6 +18,24 @@ class AbstractDetector(ABC):
     @abstractmethod
     def execute(self, images):
         pass
+    
+class InsightDetector(AbstractDetector):
+    def __init__(self):
+        self.__app = FaceAnalysis(allowed_modules=['detection', 'landmark_2d_106'], providers=['CPUExecutionProvider'])
+        self.__app.prepare(ctx_id=0, det_size=(640, 640))
+        
+    def _detect_faces(self, source):
+        faces = self.__app.get(source)
+        return faces
+        
+    def _handle_frame(self, frame) -> float:
+        pass
+    
+    def _detect_landmarks(self, face):
+        landmarks = face.landmark_2d_106
+        landmarks = np.round(landmarks).astype(int)
+        
+        return landmarks
 
 # class DlibDetector(AbstractDetector):
 
