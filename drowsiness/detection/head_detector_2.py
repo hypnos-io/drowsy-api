@@ -8,31 +8,30 @@ import cv2 as cv
 import numpy as np
 import mediapipe as mp
 
-from detector import AbstractDetector
+from detector import MediapipeHeadDetector
 
-class HeadDetector(AbstractDetector):
+class HeadDetector(MediapipeHeadDetector):
     def __init__(self, head_down_threshold=70, fps=60, eye_ratio_threshold=0.22):
+        super().__init__()
         self.head_down_threshold = head_down_threshold
         self.eye_ratio_threshold = eye_ratio_threshold
         self.frames = []
         self.fps = fps
         self._frame_length = 1 / fps
-        self.mp_pose = mp.solutions.pose
-        self.pose_images = self.mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
 
     def __get_head__(self, results, frame):
-        RIGHT_EAR_INDEXES = list(set(itertools.chain(*self.mp_pose.PoseLandmark.RIGHT_EAR)))
-        LEFT_EAR_INDEXES = list(set(itertools.chain(*self.mp_pose.PoseLandmark.LEFT_EAR)))
-        NOSE_INDEXES = list(set(itertools.chain(*self.mp_pose.PoseLandmark.NOSE)))
+        RIGHT_EAR_INDEX = self.mp_pose.PoseLandmark.RIGHT_EAR
+        LEFT_EAR_INDEX = self.mp_pose.PoseLandmark.LEFT_EAR
+        NOSE_INDEX = self.mp_pose.PoseLandmark.NOSE
 
-        right_ear_landmarks = [results.pose_landmarks.landmark[i] for i in RIGHT_EAR_INDEXES]
-        left_ear_landmarks = [results.pose_landmarks.landmark[i] for i in LEFT_EAR_INDEXES]
-        nose_landmarks = [results.pose_landmarks.landmark[i] for i in NOSE_INDEXES]
+        right_ear_landmarks = results.pose_landmarks.landmark[RIGHT_EAR_INDEX] 
+        left_ear_landmarks = results.pose_landmarks.landmark[LEFT_EAR_INDEX] 
+        nose_landmarks = results.pose_landmarks.landmark[NOSE_INDEX]  
 
         height, width, _ = frame.shape
-        right_ear_positions = [(int(l.x * width), int(l.y * height)) for l in right_ear_landmarks]
-        left_ear_positions = [(int(l.x * width), int(l.y * height)) for l in left_ear_landmarks]
-        nose_positions = [(int(l.x * width), int(l.y * height)) for l in nose_landmarks]
+        right_ear_positions = (int(right_ear_landmarks.x * width), int(right_ear_landmarks.y * height))
+        left_ear_positions = (int(left_ear_landmarks.x * width), int(left_ear_landmarks.y * height))
+        nose_positions = (int(nose_landmarks.x * width), int(nose_landmarks.y * height))
 
         return right_ear_positions, left_ear_positions, nose_positions
     
@@ -70,25 +69,27 @@ class HeadDetector(AbstractDetector):
         
         data = {}
         if results.pose_landmarks:
-                for pose_landmarks in results.pose_landmarks:
-                    right_ear_pos, left_ear_pos, nose_pos = self.__get_eyes__(results, frame)
+                for pose_landmarks in results.pose_landmarks.landmark:
+                    right_ear_pos, left_ear_pos, nose_pos = self.__get_head__(results, frame)
                     head_angle = self.__calculate_head_angle__(right_ear_pos, nose_pos, left_ear_pos)
                     head_inclination = self.__calculate_head_inclination__(right_ear_pos, left_ear_pos)
-                    print("=-=-=-=-=-=-=-=")
-                    print("Right Ear Pos: " + right_ear_pos)
-                    print("Left Ear Pos: " + left_ear_pos)
-                    print("Nose Pos: " + nose_pos)
                     data = {
-                        "right_ear_pos": right_ear_pos,
-                        "left_ear_pos": left_ear_pos,
-                        "nose_pos": nose_pos,
+                        # "right_ear_pos": right_ear_pos,
+                        # "left_ear_pos": left_ear_pos,
+                        # "nose_pos": nose_pos,
                         "head_angle": head_angle,
                         "head_inclination": head_inclination
                     }
         
         return data
     
-    def execute(self, images):
+    def execute(
+            self, 
+            images,
+            angle_threshold=110, 
+            inclination_side_threshold=40, 
+            consec_frames_threshold_angle=2,
+            consec_side_threshold_angle=2):
         detection_data = {}
         frame_data = []
         
@@ -99,7 +100,7 @@ class HeadDetector(AbstractDetector):
                 consecutive_angle_down_frames += 1
 
                 if consecutive_angle_down_frames == consec_frames_threshold_angle:
-                            head_angle_down_time += 1 / len(frames)
+                            head_angle_down_time += 1 / len(frame)
                             total_angle_down_time += head_angle_down_time
                             head_angle_up_time = 0
 
@@ -107,7 +108,7 @@ class HeadDetector(AbstractDetector):
                     consecutive_angle_down_frames = 0
 
                     if head_angle_up_time > 0:
-                        head_angle_down_time += 1 / len(frames)
+                        head_angle_down_time += 1 / len(frame)
                         if head_angle_down_time > 1.0:
                                 head_angle_down_time = 0
                                 head_angle_up_time = 0
@@ -128,92 +129,6 @@ class HeadDetector(AbstractDetector):
                             if head_inclination_down_time > 1.0:
                                 head_inclination_down_time = 0
                                 head_inclination_up_time = 0
-
-    # def __detect__(
-    #         self, 
-    #         frames,
-    #         angle_threshold=110, 
-    #         inclination_side_threshold=40, 
-    #         consec_frames_threshold_angle=2,
-    #         consec_side_threshold_angle=2):
-
-    #     # HEAD INCLINATION 
-    #     head_inclination_up_time = 0
-    #     head_inclination_down_time = 0
-    #     consecutive_inclination_down_frames = 0
-    #     total_inclination_down_time = 0
-    #     head_inclination_mean = 0
-
-    #     # HEAD ANGLE 
-    #     head_angle_up_time = 0 
-    #     head_angle_down_time = 0
-    #     consecutive_angle_down_frames = 0
-    #     total_angle_down_time = 0
-    #     head_angle_mean = 0
-
-    #     fr = 0
-
-    #     for frame in frames:
-
-    #         fr += 1
-
-    #         image = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
-    #         image.flags.writeable = False
-
-    #         results = self.pose_images.process(image)
-
-    #         image.flags.writeable = True
-    #         image = cv.cvtColor(image, cv.COLOR_RGB2BGR)
-
-    #         if results.pose_landmarks:
-    #             for pose_landmarks in results.pose_landmarks:
-    #                 right_ear_pos, left_ear_pos, nose_pos = self.__get_eyes__(results, frame)
-    #                 head_angle = self.__calculate_head_angle__(right_ear_pos, nose_pos, left_ear_pos)
-    #                 head_inclination = self.__calculate_head_inclination__(right_ear_pos, left_ear_pos)
-    #                 print("=-=-=-=-=-=-=-=")
-    #                 print("Right Ear Pos: " + right_ear_pos)
-    #                 print("Left Ear Pos: " + left_ear_pos)
-    #                 print("Nose Pos: " + nose_pos)
-
-    #                 # Head Angle
-    #                 if head_angle > angle_threshold:
-    #                     consecutive_angle_down_frames += 1
-
-    #                     if consecutive_angle_down_frames == consec_frames_threshold_angle:
-    #                         head_angle_down_time += 1 / len(frames)
-    #                         total_angle_down_time += head_angle_down_time
-    #                         head_angle_up_time = 0
-
-    #                 else:
-    #                     consecutive_angle_down_frames = 0
-
-    #                     if head_angle_up_time > 0:
-    #                         head_angle_down_time += 1 / len(frames)
-    #                         if head_angle_down_time > 1.0:
-    #                             head_angle_down_time = 0
-    #                             head_angle_up_time = 0
-
-    #                 # Head Inclination
-    #                 if head_inclination <= inclination_side_threshold:
-    #                     consecutive_inclination_down_frames += 1
-
-    #                     if consecutive_inclination_down_frames == consec_side_threshold_angle:
-    #                         head_inclination_down_time += 1 / len(frames)
-    #                         total_inclination_down_time += head_inclination_down_time
-    #                         head_inclination_up_time = 0
-    #                 else:
-    #                     consecutive_inclination_down_frames = 0
-                        
-    #                     if head_inclination_up_time > 0:
-    #                         head_inclination_down_time += 1 / len(frames)
-    #                         if head_inclination_down_time > 1.0:
-    #                             head_inclination_down_time = 0
-    #                             head_inclination_up_time = 0
-    #     total_angle_down_time = total_angle_down_time / self.fps
-    #     total_inclination_down_time = total_inclination_down_time / self.fps
-    #     head_angle_mean = head_angle_mean/len(frames)
-    #     head_inclination_mean = head_inclination_mean/len(frames)
-    #     return total_angle_down_time, total_inclination_down_time, head_angle_mean, head_inclination_mean
 
 if __name__ == "__main__":
 

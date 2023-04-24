@@ -1,5 +1,6 @@
 import sys
 sys.path.append(r'C:/Users/Callidus/Documents/drowsy-api')
+# from drowsiness.classification.detection_data import DetectionData
 import glob
 from time import time
 import itertools
@@ -8,7 +9,7 @@ import cv2 as cv
 import numpy as np
 import mediapipe as mp
 
-from detector import MediapipeDetector
+from detector import MediapipeEyeDetector
 
 # def load_image(image):
 #     return cv.imread(image, v.IMREAD_GRAYSCALE)
@@ -24,7 +25,7 @@ from detector import MediapipeDetector
 #         return frames
 
 
-class EyeDetector(MediapipeDetector):
+class EyeDetector(MediapipeEyeDetector):
     def __init__(self, blink_threshold, fps=10, ear_threshold=0.20):
         super().__init__()
         self._ear_treshhold = ear_threshold
