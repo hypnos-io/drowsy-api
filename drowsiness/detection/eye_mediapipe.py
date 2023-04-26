@@ -1,6 +1,6 @@
 import sys
 sys.path.append(r'C:/Users/Callidus/Documents/drowsy-api')
-# from drowsiness.classification.detection_data import DetectionData
+from detector import DetectionData
 import glob
 from time import time
 import itertools
@@ -133,14 +133,62 @@ P4 \          / P3
         result = 0
         return DetectionData(result, detection_data)
 
+# if __name__ == "__main__":
+#     cap = cv.VideoCapture(0)
+
+#     if not cap.isOpened():
+#         print("Erro ao abrir a camera")
+#         exit()
+
+#     detector = EyeDetector(1)
+#     prev = 0
+#     capture = True
+#     while capture:
+#         time_elapsed = time() - prev
+#         ret, frame = cap.read()
+
+#         if not ret:
+#             print("Não foi possivel capturar imagens da camera. Encerrando execução.")
+#             break
+
+#         key = cv.waitKey(1)
+
+#         if key == ord("q"):
+#             cap.release()
+#             capture = False
+
+#         if time_elapsed > 1.0 / detector._frame_rate:
+#             prev = time()
+
+#             data = detector._handle_frame(frame)
+
+#             y = 20
+#             for key, value in data.items():
+#                 cv.putText(
+#                     frame,
+#                     f"{key}: {value:.2f}",
+#                     (10, y),
+#                     cv.FONT_HERSHEY_SIMPLEX,
+#                     0.8,
+#                     (255, 0, 0),
+#                     1,
+#                     2,
+#                 )
+#                 y += 20
+
+#             cv.imshow("frame", frame)
+
+#     cv.destroyAllWindows()
+
 if __name__ == "__main__":
+
     cap = cv.VideoCapture(0)
 
     if not cap.isOpened():
         print("Erro ao abrir a camera")
         exit()
 
-    detector = EyeDetector(1)
+    detector = EyeDetector(blink_threshold=4)
     prev = 0
     capture = True
     while capture:
@@ -160,10 +208,10 @@ if __name__ == "__main__":
         if time_elapsed > 1.0 / detector._frame_rate:
             prev = time()
 
-            data = detector._handle_frame(frame)
+            data = detector.execute(frame)
 
             y = 20
-            for key, value in data.items():
+            for key, value in data.data.items():
                 cv.putText(
                     frame,
                     f"{key}: {value:.2f}",
@@ -179,51 +227,3 @@ if __name__ == "__main__":
             cv.imshow("frame", frame)
 
     cv.destroyAllWindows()
-
-# if __name__ == "__main__":
-
-#     cap = cv.VideoCapture(0)
-
-#     if not cap.isOpened():
-#         print("Erro ao abrir a camera")
-#         exit()
-
-#     detector = EyeDetector(closed_eyes_threshold=2, blink_threshold=4)
-#     prev = 0
-#     capture = True
-#     while capture:
-#         time_elapsed = time() - prev
-#         ret, frame = cap.read()
-
-#         if not ret:
-#             print("Não foi possivel capturar imagens da camera. Encerrando execução.")
-#             break
-
-#         key = cv.waitKey(1)
-
-#         if key == ord("q"):
-#             cap.release()
-#             capture = False
-
-#         if time_elapsed > 1.0 / detector.fps:
-#             prev = time()
-
-#             data = detector.execute(frame)
-
-#             y = 20
-#             for key, value in data.items():
-#                 cv.putText(
-#                     frame,
-#                     f"{key}: {value:.2f}",
-#                     (10, y),
-#                     cv.FONT_HERSHEY_SIMPLEX,
-#                     0.8,
-#                     (255, 0, 0),
-#                     1,
-#                     2,
-#                 )
-#                 y += 20
-
-#             cv.imshow("frame", frame)
-
-#     cv.destroyAllWindows()
