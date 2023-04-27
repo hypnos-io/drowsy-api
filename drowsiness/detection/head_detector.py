@@ -1,19 +1,18 @@
 import sys
-sys.path.append(r'C:/Users/Callidus/Documents/drowsy-api')
+sys.path.append(r'drowsiness')
 import glob
 from time import time
 import cv2 as cv
 import numpy as np
 
-from drowsiness.classification.detection_data import DetectionData
-from detector import MediapipeHeadDetector
+from classification.detection_data import DetectionData
+from detection.detector import MediapipeHeadDetector
 
 # def load_image(image):
 #     return cv.imread(image, v.IMREAD_GRAYSCALE)
 
-
 def create_frame_list(extension):
-        images = glob.glob(f"detection/test/frames/*.{extension}")
+        images = glob.glob(f"C:/Users/callidus/drowsy-api/drowsiness/detection/test/frames/*.{extension}")
         
         frames = [cv.imread(image) for image in images]
         
@@ -22,10 +21,10 @@ def create_frame_list(extension):
         return frames
 
 class HeadDetector(MediapipeHeadDetector):
-    def __init__(self, fps=10, angle_threshold=110, inclination_side_threshold=40):
+    def __init__(self, fps=10, frontal_threshold=100, lateral_threshold=35):
         super().__init__()
-        self.angle_threshold = angle_threshold
-        self.inclination_threshold = inclination_side_threshold
+        self.frontal_threshold = frontal_threshold
+        self.lateral_threshold = lateral_threshold
         
         self.frames = []
         self._frame_rate = fps
@@ -47,7 +46,7 @@ class HeadDetector(MediapipeHeadDetector):
 
         return right_ear_positions, left_ear_positions, nose_positions
     
-    def __calculate_head_angle__(self, a, b, c):
+    def __calculate_head_frontal__(self, a, b, c):
         a = np.array(a)
         b = np.array(b)
         c = np.array(c)
@@ -59,10 +58,13 @@ class HeadDetector(MediapipeHeadDetector):
 
         if angle > 180.0:
             angle = 360 - angle
+        
+        if b[1] < a[1] - 17 or b[1] < c[1] - 17:
+            angle = 140
 
         return angle
 
-    def __calculate_head_inclination__(self, a, b):
+    def __calculate_head_lateral__(self, a, b):
         a = np.array(a)
         b = np.array(b)
 
@@ -79,74 +81,74 @@ class HeadDetector(MediapipeHeadDetector):
         results = self.pose_images.process(frame)
         frame.flags.writeable = True
         data = {
-            "head_angle": 0,
-            "head_inclination": 0
+            "head_frontal": 0,
+            "head_lateral": 0
         }
         
         if results.pose_landmarks:
                 for pose_landmarks in results.pose_landmarks.landmark:
                     right_ear_pos, left_ear_pos, nose_pos = self.__get_head__(results, frame)
-                    head_angle = self.__calculate_head_angle__(right_ear_pos, nose_pos, left_ear_pos)
-                    head_inclination = self.__calculate_head_inclination__(right_ear_pos, left_ear_pos)
-                    data["head_angle"] = head_angle
-                    data["head_inclination"] = head_inclination
+                    head_frontal = self.__calculate_head_frontal__(right_ear_pos, nose_pos, left_ear_pos)
+                    head_lateral = self.__calculate_head_lateral__(right_ear_pos, left_ear_pos)
+                    data["head_frontal"] = head_frontal
+                    data["head_lateral"] = head_lateral
         return data
     
     def execute(
             self, 
             images,
-            consec_frames_threshold_angle=20,
-            consec_side_threshold_angle=2):
+            consec_frames_threshold_frontal=5,
+            consec_frames_threshold_lateral=5):
         
         detection_data = {
-            "total_angle_down_time": 0,
-            "total_inclination_down_time": 0,
-            "head_angle_mean": 0,
-            "head_inclination_mean": 0,
-            "angle_down_consecutives": 0,
-            "inclination_down_consecutives": 0,
-            "angle_down_count": 0,
-            "inclination_down_count": 0,
+            "total_frontal_down_time": 0,
+            "head_frontal_mean": 0,
+            "total_lateral_down_time": 0,
+            "head_lateral_mean": 0,
             }
+        
+        lateral_down_count = 0
+        frontal_down_count = 0
+
+        frontal_down_consecutives = 0
+        lateral_down_consecutives = 0
         
         frame_data = []
         for frame in images:
             data = self._handle_frame(frame)
             
-            # Head Angle
-            if data["head_angle"] < self.angle_threshold:
-                detection_data["angle_down_consecutives"] += 1
+            # Head frontal
+            if data["head_frontal"] < self.frontal_threshold:
+                frontal_down_consecutives += 1
 
-                if detection_data["angle_down_consecutives"] > consec_frames_threshold_angle:
-                            detection_data["angle_down_count"] += 1
+                if frontal_down_consecutives > consec_frames_threshold_frontal:
+                            print("\033[31m Frontal \033[0m")
+                            frontal_down_count += 1
 
             else:
-                detection_data["angle_down_consecutives"] = 0
-                if detection_data["angle_down_count"] > 1:
-                        detection_data["angle_down_count"] = 0
+                frontal_down_consecutives = 0
 
 
-            # # Head Inclination
-            if data["head_inclination"] < self.inclination_threshold:
-                detection_data["inclination_down_consecutives"] += 1
+            # # Head lateral
+            if data["head_lateral"] > self.lateral_threshold:
+                lateral_down_consecutives += 1
 
-                if detection_data["inclination_down_consecutives"] == consec_side_threshold_angle:
-                    detection_data["inclination_down_count"] += 1 
+                if lateral_down_consecutives > consec_frames_threshold_lateral:
+                    print("\033[32m Latereal \033[0m")
+                    lateral_down_count += 1 
             
             else:
-                detection_data["inclination_down_consecutives"] = 0
-                if detection_data["inclination_down_count"] > 1:
-                    detection_data["inclination_down_count"] = 0
+                lateral_down_consecutives = 0
 
             frame_data.append(data)
 
-        detection_data["head_angle_mean"] = np.mean([data["head_angle"] for data in frame_data])
-        detection_data["total_angle_down_time"] = (
-            detection_data["angle_down_count"] * self._frame_length
+        detection_data["head_frontal_mean"] = np.mean([data_frontal["head_frontal"] for data_frontal in frame_data])
+        detection_data["total_frontal_down_time"] = (
+            frontal_down_count * self._frame_length
         )
-        detection_data["head_inclination_mean"] = np.mean([data["head_inclination"] for data in frame_data])
-        detection_data["total_inclination_down_time"] = (
-            detection_data["total_inclination_down_time"] * self._frame_length
+        detection_data["head_lateral_mean"] = np.mean([data_lateral["head_lateral"] for data_lateral in frame_data])
+        detection_data["total_lateral_down_time"] = (
+            lateral_down_count * self._frame_length
         )
         result = 0
     
