@@ -1,4 +1,4 @@
-class DrowsinessDetection:
+class Drowsy:
     def __init__(self) -> None:
         # self._eye =
         # self._mouth =

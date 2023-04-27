@@ -1,8 +1,8 @@
-def on_connection():
+async def connect():
     print('[WS] Conectado no servidor.')
 
-def disconnect():
+async def disconnect():
     print('[WS] Desconectado do servidor.')
 
-def connect_error(data):
+async def connect_error(data):
     print('[WS] Não foi possível se conectar.')

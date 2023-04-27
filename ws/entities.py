@@ -38,8 +38,3 @@ class FatigueStatus:
             'detection': self.detection.get_dictionary()
         }
         return dictionary
-
-detection = FatigueDetectionInfo(mouth={'teste': 'teste'},
-                                 eyes={'teste': 'teste'},
-                                 head={'teste': 'teste'})
-example_status = FatigueStatus(kssScale=1, detection=detection)
