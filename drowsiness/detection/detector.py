@@ -68,18 +68,3 @@ class MediapipeHeadDetector(AbstractDetector):
     def __init__(self) -> None:
         self.mp_pose = mp.solutions.pose
         self.pose_images = self.mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
-
-
-
-import json
-
-
-class DetectionData:
-    def __init__(self, result, data) -> None:
-        assert 0 <= result <= 1, "Detection result should be inbetween 0 and 1"
-
-        self.result = result
-        self.data = data
-
-    def json(self) -> str:
-        return json.dumps({"result": self.result, **self.data})

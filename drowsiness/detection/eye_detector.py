@@ -6,8 +6,8 @@ sys.path.append(r'C:/Users/Callidus/Documents/drowsy-api')
 import cv2 as cv
 import numpy as np
 
-from detector import DlibDetector
 from drowsiness.classification.detection_data import DetectionData
+from detector import DlibDetector
 
 
 LEFT_EYE = slice(36, 42)
