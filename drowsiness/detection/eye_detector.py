@@ -1,12 +1,12 @@
 from time import time
 import sys
-sys.path.append(r'C:/Users/Callidus/Documents/drowsy-api')
+#sys.path.append(r'C:/Users/Callidus/Documents/drowsy-api')
 
 
 import cv2 as cv
 import numpy as np
 
-from detector import DlibDetector
+from detection.detector import DlibDetector
 from drowsiness.classification.detection_data import DetectionData
 
 
@@ -73,12 +73,12 @@ class EyeDlibDetector(DlibDetector):
 
             frame_data.append(data)
 
-        detection_data["ear_mean"] = np.mean(data["ear"] for data in frame_data)
+        ear = np.mean(data["ear"] for data in frame_data)
         detection_data["closed_time"] = (
             detection_data["closed_frame_count"] * self._frame_length
         )
 
-        result = 0
+        result = ear
         return DetectionData(result, detection_data)
 
 

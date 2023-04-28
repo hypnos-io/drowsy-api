@@ -13,7 +13,7 @@ OUTER_LIP = np.array([52, 64, 63, 67, 68, 61, 58, 59, 53, 56, 55])
 INNER_LIP = np.array([65, 66, 62, 70, 69, 57, 60, 54])
 
 
-class MouthDlibDetector(InsightDetector):
+class MouthInsightDetector(InsightDetector):
     def __init__(self, fps=24, min_area=200, min_duration=4) -> None:
         super().__init__()
         self._frame_rate = fps
@@ -80,7 +80,7 @@ if __name__ == "__main__":
         print("Erro ao abrir a camera")
         exit()
 
-    detector = MouthDlibDetector()
+    detector = MouthInsightDetector()
     prev = 0
     capture = True
     while capture:

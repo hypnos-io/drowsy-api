@@ -1,9 +1,11 @@
+import sys 
+sys.path.append(r'drowsiness/')
 import glob
-from drowsiness.detection.detector import AbstractDetector
+from detection.detector import AbstractDetector
 import cv2 as cv
 import itertools
 import numpy as np
-import mediapipe as mp
+#import mediapipe as mp
 import matplotlib.pyplot as plt
 
 def load_image(image):
@@ -11,12 +13,19 @@ def load_image(image):
 
 
 def create_frame_list(location, extension):
-        images = glob.glob(f"detection/api/frames/{location}/*.{extension}")
-        
+        images = glob.glob(f"drowsiness/{location}/*.{extension}")
+    
+        # Apply image processing techniques
         frames = [cv.imread(image) for image in images]
+        frames = [cv.resize(frame, (640, 360)) for frame in frames]  # resize images to a standard size
+        frames = [cv.cvtColor(frame, cv.COLOR_RGB2BGR) for frame in frames]
         
-        frames = [cv.cvtColor(frame, cv.COLOR_BGR2RGB) for frame in frames]
-
+        # Apply camera calibration
+        camera_matrix = np.array([[1000, 0, 320], [0, 1000, 180], [0, 0, 1]])  # example camera matrix
+        
+        distortion_coeffs = np.array([0.1, -0.05, 0, 0])  # example distortion coefficients
+        frames = [cv.undistort(frame, camera_matrix, distortion_coeffs) for frame in frames]
+        
         return frames
 
 

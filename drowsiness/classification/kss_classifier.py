@@ -1,44 +1,37 @@
+import sys
+sys.path.append(r'drowsiness/')
+
+from detection.eye_insight_detector import EyeInsightDetector
+from detection.mouth_detector import MouthDlibDetector
+from detection.eye_mediapipe import create_frame_list
+
 class KSSClassifier:
-    def __init__(self, num_frames, eyes_result, head_result):
-        self.num_frames = num_frames
-        self.eyes_result = eyes_result
-        self.head_result = head_result
+    def __init__(self, eyes_result, head_result, mouth_result):
+        self.__eyes_result = eyes_result
+        self.__head_result = head_result
+        self.__mouth_result = mouth_result
 
-    def calculate_eye_closed_percentage(self, eye_closed_frames):
-        return eye_closed_frames / self.num_frames
-
-    def calculate_kss_score(self, weight_dictionary):
-        # eye_closed_percentage = self.calculate_eye_closed_percentage(eye_closed_frames)
-        # Pesos para características diferentes
-        eye_closed_weight = weight_dictionary["closed eye weight"]
-        blink_weight = weight_dictionary["blink weight"]
-        ear_eye_weight = weight_dictionary["eye ear weight"]
-        # head_tilt_weight = weight_dictionary["head tilt weight"]
-
-        # Normaliza os resultados
-        num_blinks_norm = (
-            (self.eyes_result["blinks"] / (20 / 60 * self.num_frames)) * 60 / 20
+    def __calculate_kss_score(self, weight_dictionary):
+        mouth = self.__mouth_result.data
+        eye = self.__eyes_result.data
+        head = self.__head_result.data
+        
+        mouth_score = (
+              (mouth["yawn_time"] * weight_dictionary["yawn_time_weight"])
+            + (mouth["yawn_percentage"] * weight_dictionary["yawn_percentage"])
         )
-        average_ear_norm = self.eyes_result["eye_opening"] / 0.4
-        closed_eyes_norm = self.eyes_result["closed_eyes"] / (self.num_frames / 10)
+        
+        eye_score = (
+                  (eye["eye_opening"] * weight_dictionary["eye_opening_weight"])
+                + eye["closed_eyes_time"] * weight_dictionary["close_eyes_time_weight"]
+                + eye["blink_count"] * weight_dictionary["blink_count_weight"])
+        
+        score = (mouth_score + eye_score) / 2
 
-        score = (
-            (eye_closed_weight * closed_eyes_norm)
-            + (blink_weight * num_blinks_norm)
-            + (ear_eye_weight * average_ear_norm)
-        )
-
-        scores = {
-            "blink": num_blinks_norm,
-            "ear": average_ear_norm,
-            "closed": closed_eyes_norm,
-            "score": score,
-        }
-        print(f"KSS SCORE: {scores}")
-        return round(score, 4) * 10
+        return score
 
     def classify(self, weight_dictionary):
-        score = self.calculate_kss_score(weight_dictionary)
+        score = self.__calculate_kss_score(weight_dictionary)
 
         classification = f"[{score}] "
 
@@ -52,3 +45,18 @@ class KSSClassifier:
             classification += "Alerta: Sonolento, cansado; precisa de aviso sonoro"
 
         return classification
+
+if __name__ == "__main__":
+    frames = create_frame_list('test/kinda_tired', "png")
+    eye_detector = EyeInsightDetector(ear_threshold=0.14, fps=10)
+    mouth_detector = MouthDlibDetector()
+    eyes_result = eye_detector.execute(frames)
+    mouth_result = mouth_detector.execute(frames)
+    head_result = None
+    
+    kss = KSSClassifier(eyes_result, head_result, mouth_result)
+    weight_dictionary = {
+        "eye_opening_weight": 4,"blink_count_weight": 2, "close_eyes_time_weight": 4,
+        "yawn_time_weight": 4, "yawn_percentage": 6
+    }
+    kss.classify(weight_dictionary)
