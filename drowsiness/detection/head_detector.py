@@ -1,16 +1,52 @@
-from drowsiness.detection.detector import AbstractDetector
-import mediapipe as mp
-import numpy as np
+import sys
+sys.path.append(r'drowsiness')
+import glob
+from time import time
 import cv2 as cv
+import numpy as np
 
+from classification.detection_data import DetectionData
+from detection.detector import MediapipeHeadDetector
 
-class HeadDetector(AbstractDetector):
-    def __init__(self, head_ratio_threshold):
-        self.head_ratio_threshold = head_ratio_threshold
-        self.mp_pose = mp.solutions.pose
+# def load_image(image):
+#     return cv.imread(image, v.IMREAD_GRAYSCALE)
+
+def create_frame_list(extension):
+        images = glob.glob(f"C:/Users/callidus/drowsy-api/drowsiness/detection/test/frames/*.{extension}")
+        
+        frames = [cv.imread(image) for image in images]
+        
+        frames = [cv.cvtColor(frame, cv.COLOR_BGR2RGB) for frame in frames]
+
+        return frames
+
+class HeadDetector(MediapipeHeadDetector):
+    def __init__(self, fps=10, frontal_threshold=110, lateral_threshold=35):
+        super().__init__()
+        self.frontal_threshold = frontal_threshold
+        self.lateral_threshold = lateral_threshold
+        
         self.frames = []
+        self._frame_rate = fps
+        self._frame_length = 1 / self._frame_rate
 
-    def calculate_head_angle(self, a, b, c):
+    def __get_head__(self, results, frame):
+        RIGHT_EAR_INDEX = self.mp_pose.PoseLandmark.RIGHT_EAR
+        LEFT_EAR_INDEX = self.mp_pose.PoseLandmark.LEFT_EAR
+        NOSE_INDEX = self.mp_pose.PoseLandmark.NOSE
+
+        right_ear_landmarks = results.pose_landmarks.landmark[RIGHT_EAR_INDEX] 
+        left_ear_landmarks = results.pose_landmarks.landmark[LEFT_EAR_INDEX] 
+        nose_landmarks = results.pose_landmarks.landmark[NOSE_INDEX]  
+
+        height, width, _ = frame.shape
+        right_ear_positions = (int(right_ear_landmarks.x * width), int(right_ear_landmarks.y * height))
+        left_ear_positions = (int(left_ear_landmarks.x * width), int(left_ear_landmarks.y * height))
+        nose_positions = (int(nose_landmarks.x * width), int(nose_landmarks.y * height))
+
+        return right_ear_positions, left_ear_positions, nose_positions
+    
+    def __calculate_head_frontal__(self, a, b, c):
         a = np.array(a)
         b = np.array(b)
         c = np.array(c)
@@ -22,10 +58,13 @@ class HeadDetector(AbstractDetector):
 
         if angle > 180.0:
             angle = 360 - angle
+        
+        if b[1] < a[1] - 17 or b[1] < c[1] - 17:
+            angle = 140
 
         return angle
 
-    def calculate_head_inclination(self, a, b):
+    def __calculate_head_lateral__(self, a, b):
         a = np.array(a)
         b = np.array(b)
 
@@ -36,169 +75,152 @@ class HeadDetector(AbstractDetector):
             angle = angle * -1
 
         return angle
-
-    def head_inclination(
-        self,
-        landmarks,
-        head_soft_count,
-        head_hard_count,
-        inclination_middle_threshold=30,
-        inclination_bottom_threshold=50,
-    ):
-        l_ear = [
-            landmarks[self.mp_pose.PoseLandmark.LEFT_EAR.value].x,
-            landmarks[self.mp_pose.PoseLandmark.LEFT_EAR.value].y,
-        ]
-        r_ear = [
-            landmarks[self.mp_pose.PoseLandmark.RIGHT_EAR.value].x,
-            landmarks[self.mp_pose.PoseLandmark.RIGHT_EAR.value].y,
-        ]
-
-        angle = self.calculate_head_inclination(r_ear, l_ear)
-
-        # HEAD INCLINATION DETECTIONS
-        if angle <= inclination_middle_threshold:
-            head_soft_count += 1
-        elif inclination_middle_threshold < angle < inclination_bottom_threshold:
-            head_hard_count += 1
-
-        return head_soft_count, head_hard_count
-
-    def head_detection(
-        self,
-        frames,
-        angle_threshold=110,
-        inclination_pos1_threshold=30,
-        inclination_pos2_threshold=50,
-        consec_frames_threshold_angle=2,
-        consec_pos1_threshold_angle=2,
-        consec_pos2_threshold_angle=2,
-    ):
-        with self.mp_pose.Pose(
-            min_detection_confidence=0.5, min_tracking_confidence=0.5
-        ) as pose:
-            # HEAD INCLINATION (POS 0, 1, 2)
-            head_pos0_time = 0
-
-            head_pos1_time = 0
-            consecutive_pos1_frames = 0
-            total_pos1_time = 0
-            pos1_threshold = 2
-            total_angle = []
-            tilt = []
-
-            head_pos2_time = 0
-            consecutive_pos2_frames = 0
-            total_pos2_time = 0
-            pos2_threshold = 2
-
-            # HEAD ANGLE (UP AND DOWN)
-            head_down_time = 0
-            head_up_time = 0
-            consecutive_angle_frames = 0
-            total_head_angle_time = 0
-
-            for frame in frames:
-                image = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
-                image.flags.writeable = False
-
-                results = pose.process(image)
-
-                image.flags.writeable = True
-                image = cv.cvtColor(image, cv.COLOR_RGB2BGR)
-
-                landmarks = results.pose_landmarks.landmark
-
-                # HEAD ANGLE
-                r_ear = [
-                    landmarks[self.mp_pose.PoseLandmark.RIGHT_EAR.value].x,
-                    landmarks[self.mp_pose.PoseLandmark.RIGHT_EAR.value].y,
-                ]
-                nose = [
-                    landmarks[self.mp_pose.PoseLandmark.NOSE.value].x,
-                    landmarks[self.mp_pose.PoseLandmark.NOSE.value].y,
-                ]
-                l_ear = [
-                    landmarks[self.mp_pose.PoseLandmark.LEFT_EAR.value].x,
-                    landmarks[self.mp_pose.PoseLandmark.LEFT_EAR.value].y,
-                ]
-
-                angle = self.calculate_head_angle(r_ear, nose, l_ear)
-                total_angle.append(angle)
-                # print(angle)
-
-                if angle > angle_threshold:
-                    consecutive_angle_frames += 1
-
-                    if consecutive_angle_frames == consec_frames_threshold_angle:
-                        head_down_time += 1 / 10
-                        total_head_angle_time += head_down_time
-                        head_up_time = 0
-
-                else:
-                    consecutive_angle_frames = 0
-
-                    if head_up_time > 0:
-                        head_down_time += 1 / 10
-                        if head_down_time > 1.0:
-                            head_down_time = 0
-                            head_up_time = 0
-
-                # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-
-
-                # HEAD INCLINATION
-                l_ear = [
-                    landmarks[self.mp_pose.PoseLandmark.LEFT_EAR.value].x,
-                    landmarks[self.mp_pose.PoseLandmark.LEFT_EAR.value].y,
-                ]
-                r_ear = [
-                    landmarks[self.mp_pose.PoseLandmark.RIGHT_EAR.value].x,
-                    landmarks[self.mp_pose.PoseLandmark.RIGHT_EAR.value].y,
-                ]
-
-                angle = self.calculate_head_inclination(r_ear, l_ear)
-                tilt.append(angle)
-
-                if angle <= inclination_pos1_threshold:
-                    consecutive_pos1_frames += 1
-
-                    if consecutive_pos1_frames == consec_pos1_threshold_angle:
-                        head_pos1_time += 1 / 10
-                        total_pos1_time += head_pos1_time
-                        head_pos0_time = 0
-
-                elif inclination_pos1_threshold < angle < inclination_pos2_threshold:
-                    consecutive_pos2_frames += 1
-
-                    if consecutive_pos2_frames == consec_pos2_threshold_angle:
-                        head_pos2_time += 1 / 10
-                        total_pos2_time += head_pos2_time
-                        head_pos0_time = 0
-                else:
-                    consecutive_pos1_frames = 0
-                    consecutive_pos2_frames = 0
-
-                    if head_pos0_time > 0:
-                        head_pos1_time += 1 / len(frames)
-                        head_pos2_time += 1 / len(frames)
-
-                        if head_pos0_time > 1.0:
-                            head_pos0_time = 0
-                            head_pos1_time = 0
-                            head_pos2_time = 0
-        avg_angle = round(np.mean(total_angle), 2)
-        avg_tilt = round(np.mean(tilt), 2)
-        return round(total_head_angle_time, 2), avg_tilt
-
-    def cropROI(self, source):
-        pass
-
-    def execute(self, frames):
-        "Executes the head detection"
-        total_head_angle_time, tilt = self.head_detection(frames)
-        result_dict = {
-            "total_head_angle_time": total_head_angle_time,
-            "avegare tilt (L/R)": tilt,
+    
+    def _handle_frame(self, frame):
+        frame = cv.cvtColor(frame, cv.COLOR_RGB2BGR)
+        results = self.pose_images.process(frame)
+        frame.flags.writeable = True
+        data = {
+            "head_frontal": 0,
+            "head_lateral": 0
         }
+        
+        if results.pose_landmarks:
+                for pose_landmarks in results.pose_landmarks.landmark:
+                    right_ear_pos, left_ear_pos, nose_pos = self.__get_head__(results, frame)
+                    head_frontal = self.__calculate_head_frontal__(right_ear_pos, nose_pos, left_ear_pos)
+                    head_lateral = self.__calculate_head_lateral__(right_ear_pos, left_ear_pos)
+                    data["head_frontal"] = head_frontal
+                    data["head_lateral"] = head_lateral
+        return data
+    
+    def execute(
+            self, 
+            images,
+            consec_frames_threshold_frontal=2,
+            consec_frames_threshold_lateral=2):
+        
+        detection_data = {
+            "total_frontal_down_time": 0,
+            "head_frontal_mean": 0,
+            "total_lateral_down_time": 0,
+            "head_lateral_mean": 0,
+            }
+        
+        lateral_down_count = 0
+        frontal_down_count = 0
 
-        return result_dict
+        frontal_down_consecutives = 0
+        lateral_down_consecutives = 0
+        
+        frame_data = []
+        frames = 0
+        for frame in images:
+            frames += 1
+            data = self._handle_frame(frame)
+            
+            # Head frontal
+            if data["head_frontal"] < self.frontal_threshold:
+                frontal_down_consecutives += 1
+
+                if frontal_down_consecutives > consec_frames_threshold_frontal:
+                            print(f"\033[31m Frontal :{frames}\033[0m")
+                            frontal_down_count += 1
+
+            else:
+                frontal_down_consecutives = 0
+
+
+            # # Head lateral
+            if data["head_lateral"] > self.lateral_threshold:
+                lateral_down_consecutives += 1
+
+                if lateral_down_consecutives > consec_frames_threshold_lateral:
+                    print(f"\033[32m Latereal :{frames}\033[0m")
+                    lateral_down_count += 1 
+            
+            else:
+                lateral_down_consecutives = 0
+
+            frame_data.append(data)
+
+        detection_data["head_frontal_mean"] = np.mean([data_frontal["head_frontal"] for data_frontal in frame_data])
+        detection_data["total_frontal_down_time"] = (
+            frontal_down_count * self._frame_length
+        )
+        detection_data["head_lateral_mean"] = np.mean([data_lateral["head_lateral"] for data_lateral in frame_data])
+        detection_data["total_lateral_down_time"] = (
+            lateral_down_count * self._frame_length
+        )
+        
+        # Result
+        frontal_max = np.max([data_frontal["head_frontal"] for data_frontal in frame_data])
+        frontal = np.array(
+             [((data_frontal["head_frontal"] - 0) / (frontal_max - 0)) for data_frontal in frame_data]
+        )
+
+        lateral_max = np.max([data_lateral["head_lateral"] for data_lateral in frame_data])
+        lateral = np.array(
+            [((data_lateral["head_lateral"] - 0) / (lateral_max - 0)) for data_lateral in frame_data]
+        )
+
+        final_result_array = np.array(
+            [(frontal[i] * 0.6) + (lateral[i] * 0.4) for i in range(len(frame_data))]
+        )
+
+        for i in final_result_array:
+            if i >= 10:
+                print("Erro")
+
+        final_result = np.mean(final_result_array)
+
+        return DetectionData(final_result, detection_data)
+
+if __name__ == "__main__":
+
+    cap = cv.VideoCapture(0)
+
+    if not cap.isOpened():
+        print("Erro ao abrir a camera")
+        exit()
+
+    detector = HeadDetector()
+    prev = 0
+    capture = True
+    
+    while capture:
+        time_elapsed = time() - prev
+        ret, frame = cap.read()
+
+        if not ret:
+            print("Não foi possivel capturar imagens da camera. Encerrando execução.")
+            break
+
+        key = cv.waitKey(1)
+
+        if key == ord("q"):
+            cap.release()
+            capture = False
+
+        if time_elapsed > 1.0 / detector._frame_rate:
+            prev = time()
+
+            data = detector._handle_frame(frame)
+
+            y = 20
+            for key, value in data.items():
+                cv.putText(
+                    frame,
+                    f"{key}: {value:.2f}",
+                    (10, y),
+                    cv.FONT_HERSHEY_SIMPLEX,
+                    0.5,
+                    (255, 0, 0),
+                    1,
+                    2,
+                )
+                y += 20
+
+            cv.imshow("frame", frame)
+
+    cv.destroyAllWindows()

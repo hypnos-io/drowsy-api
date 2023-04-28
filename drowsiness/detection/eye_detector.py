@@ -8,6 +8,7 @@ import numpy as np
 
 from detection.detector import DlibDetector
 from drowsiness.classification.detection_data import DetectionData
+from detector import DlibDetector
 
 
 LEFT_EYE = slice(36, 42)
