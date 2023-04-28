@@ -67,7 +67,7 @@ class MouthDlibDetector(DlibDetector):
 
         maximum = np.max([data["inner_area"] for data in frame_data])
         area = np.array(
-            ((data["inner_area"] - 0) / (maximum - 0)) for data in frame_data
+            [((data["inner_area"] - 0) / (maximum - 0)) for data in frame_data]
         )
 
         result = np.mean(area)

@@ -12,7 +12,7 @@ left_points = np.array([35, 41, 42, 39, 37, 36])
 right_points = np.array([89, 95, 96, 93, 91, 90])
 
 class EyeInsightDetector(InsightDetector):
-    def __init__(self, ear_threshold, closed_eyes_threshold=3, fps=30, video_lenght=30):
+    def __init__(self, ear_threshold=0.17, closed_eyes_threshold=3, fps=10, video_lenght=30):
         super().__init__()
         
         self._blink_max = 20
@@ -89,16 +89,19 @@ class EyeInsightDetector(InsightDetector):
         return DetectionData(round(result, 1), detection_data)
             
 if __name__ == '__main__':
-    detector = EyeInsightDetector(ear_threshold=0.17, closed_eyes_threshold=3, fps=10)
+    detector = EyeInsightDetector(ear_threshold=0.17, closed_eyes_threshold=3, fps=10, video_lenght=32)
     
     frame_sequence = create_frame_list("test/not_tired", "png")
-    print("\nRunning detection....")
-    response = detector.execute(frame_sequence)
-    print("=" * 30 + " RESULTS: " + 30 * "=")    
-    response.show()
-    if response.result < 0.4:
-        print("Not tired")
-    elif 0.4 <= response.result < 0.7:
-        print("Kinda tired")
+    if len(frame_sequence) <= 0:
+        print("Lista vazia.")
     else:
-        print("Tired")
+        print("\nRunning detection....")
+        response = detector.execute(frame_sequence)
+        print("=" * 30 + " RESULTS: " + 30 * "=")    
+        response.show()
+        if response.result < 0.4:
+            print("Not tired")
+        elif 0.4 <= response.result < 0.7:
+            print("Kinda tired")
+        else:
+            print("Tired")
