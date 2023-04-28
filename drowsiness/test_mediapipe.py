@@ -18,6 +18,7 @@ print("=-=-=-=-=-=-=-=-=")
 print("Detection Results: \n")
 for key, value in result_head.data.items():
     print(f"{key}: {value:.2f}")
+print(result_head.json())
 print("=-=-=-=-=-=-=-=-=")
 
 current_time = time.time() - start_time

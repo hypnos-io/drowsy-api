@@ -21,7 +21,7 @@ def create_frame_list(extension):
         return frames
 
 class HeadDetector(MediapipeHeadDetector):
-    def __init__(self, fps=10, frontal_threshold=100, lateral_threshold=35):
+    def __init__(self, fps=10, frontal_threshold=110, lateral_threshold=35):
         super().__init__()
         self.frontal_threshold = frontal_threshold
         self.lateral_threshold = lateral_threshold
@@ -97,8 +97,8 @@ class HeadDetector(MediapipeHeadDetector):
     def execute(
             self, 
             images,
-            consec_frames_threshold_frontal=5,
-            consec_frames_threshold_lateral=5):
+            consec_frames_threshold_frontal=2,
+            consec_frames_threshold_lateral=2):
         
         detection_data = {
             "total_frontal_down_time": 0,
@@ -114,7 +114,9 @@ class HeadDetector(MediapipeHeadDetector):
         lateral_down_consecutives = 0
         
         frame_data = []
+        frames = 0
         for frame in images:
+            frames += 1
             data = self._handle_frame(frame)
             
             # Head frontal
@@ -122,7 +124,7 @@ class HeadDetector(MediapipeHeadDetector):
                 frontal_down_consecutives += 1
 
                 if frontal_down_consecutives > consec_frames_threshold_frontal:
-                            print("\033[31m Frontal \033[0m")
+                            print(f"\033[31m Frontal :{frames}\033[0m")
                             frontal_down_count += 1
 
             else:
@@ -134,7 +136,7 @@ class HeadDetector(MediapipeHeadDetector):
                 lateral_down_consecutives += 1
 
                 if lateral_down_consecutives > consec_frames_threshold_lateral:
-                    print("\033[32m Latereal \033[0m")
+                    print(f"\033[32m Latereal :{frames}\033[0m")
                     lateral_down_count += 1 
             
             else:
@@ -150,10 +152,26 @@ class HeadDetector(MediapipeHeadDetector):
         detection_data["total_lateral_down_time"] = (
             lateral_down_count * self._frame_length
         )
-        result = 0
-    
+        
+        print(len(frame_data))
+        # Result
+        frontal_max = np.max([data_frontal["head_frontal"] for data_frontal in frame_data])
+        frontal = np.array(
+             ((data_frontal["head_frontal"] - 0 / (frontal_max - 0)) for data_frontal in frame_data)
+        )
 
-        return DetectionData(result, detection_data)
+        lateral_max = np.max([data_lateral["head_lateral"] for data_lateral in frame_data])
+        lateral = np.array(
+            ((data_lateral["head_lateral"] - 0 / (lateral_max - 0)) for data_lateral in frame_data)
+        )
+
+        final_result_array = np.array(
+            [(frontal[i] * 0.6) + (lateral[i] * 0.4) for i in range(len(frame_data))]
+        )
+
+        final_result = np.mean(final_result_array)
+
+        return DetectionData(final_result, detection_data)
 
 if __name__ == "__main__":
 
