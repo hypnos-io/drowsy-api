@@ -1,11 +1,13 @@
-from api.eye_mediapipe import EyeDetector, create_frame_list
-from api.head_detector import HeadDetector
-from classification.kss_classifier import KSSClassifier
 import time
-import cv2
 
-# test_image = cv2.imread("detection/api/frames/tests/half_eyes_2.png")
-# cv2.cvtColor(test_image, cv2.COLOR_BGR2RGB)
+import cv2 as cv
+
+from detection.detection.eye_mediapipe import EyeDetector, create_frame_list
+from detection.detection.head_detector import HeadDetector
+from detection.classification import KSSClassifier
+
+# test_image = cv.imread("detection/api/frames/tests/half_eyes_2.png")
+# cv.cvtColor(test_image, cv.COLOR_BGR2RGB)
 # weights = {
 #     "closed eye weight": 0.6,
 #     "blink weight": 0.2,

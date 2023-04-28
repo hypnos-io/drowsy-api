@@ -1,10 +1,11 @@
-from drowsiness.detection.detector import AbstractDetector
-import mediapipe as mp
-import numpy as np
 import cv2 as cv
+import numpy as np
+import mediapipe as mp
+
+from . import detector
 
 
-class HeadDetector(AbstractDetector):
+class HeadDetector(detector.AbstractDetector):
     def __init__(self, head_ratio_threshold):
         self.head_ratio_threshold = head_ratio_threshold
         self.mp_pose = mp.solutions.pose

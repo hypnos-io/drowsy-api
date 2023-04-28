@@ -1,6 +1,7 @@
 # from api.eye_mediapipe import EyeDetector, create_frame_list
-from api.eye_detector import EyeDetector, create_frame_list
 import time
+
+from detection.detection.eye_detector import EyeDetector, create_frame_list
 
 # test_image = cv2.imread("detection/api/frames/tests/half_eyes_2.png")
 # cv2.cvtColor(test_image, cv2.COLOR_BGR2RGB)

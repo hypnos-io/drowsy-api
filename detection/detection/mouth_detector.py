@@ -3,15 +3,15 @@ from time import time
 import cv2 as cv
 import numpy as np
 
-from drowsiness.detection.detector import DlibDetector
-from classification.detection_data import DetectionData
+from detection.classification import DetectionData
+from . import detector
 
 
 OUTER_LIP = slice(48, 60)
 INNER_LIP = slice(60, 68)
 
 
-class MouthDlibDetector(DlibDetector):
+class MouthDlibDetector(detector.DlibDetector):
     def __init__(self, fps=24, min_area=200, min_duration=4) -> None:
         self._frame_rate = fps
         self._frame_length = 1 / fps
@@ -80,7 +80,7 @@ if __name__ == "__main__":
         print("Erro ao abrir a camera")
         exit()
 
-    detector = MouthDlibDetector()
+    mouth_detector = MouthDlibDetector()
     prev = 0
     capture = True
     while capture:
@@ -97,7 +97,7 @@ if __name__ == "__main__":
             cap.release()
             capture = False
 
-        if time_elapsed > 1.0 / detector._frame_rate:
+        if time_elapsed > 1.0 / mouth_detector._frame_rate:
             prev = time()
 
             data = detector._handle_frame(frame)

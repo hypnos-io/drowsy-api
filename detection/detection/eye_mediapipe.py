@@ -1,13 +1,14 @@
 import glob
-from drowsiness.detection.detector import AbstractDetector
-import cv2 as cv
 import itertools
+
+import cv2 as cv
 import numpy as np
 import mediapipe as mp
-import matplotlib.pyplot as plt
+
+from . import detector
 
 def load_image(image):
-    return cv.imread(image, v.IMREAD_GRAYSCALE)
+    return cv.imread(image, cv.IMREAD_GRAYSCALE)
 
 
 def create_frame_list(location, extension):
@@ -20,7 +21,7 @@ def create_frame_list(location, extension):
         return frames
 
 
-class EyeDetector(AbstractDetector):
+class EyeDetector(detector.AbstractDetector):
     def __init__(self, closed_eyes_threshold, blink_threshold, fps=10, eye_ratio_threshold=0.22):
         self.closed_eyes_threshold = closed_eyes_threshold
         self.blink_threshold = blink_threshold

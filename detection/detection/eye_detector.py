@@ -3,14 +3,13 @@ from time import time
 import cv2 as cv
 import numpy as np
 
-from drowsiness.detection.detector import DlibDetector
-from classification.detection_data import DetectionData
+from . import detector
 
 LEFT_EYE = slice(36, 42)
 RIGHT_EYE = slice(42, 48)
 
 
-class EyeDlibDetector(DlibDetector):
+class EyeDlibDetector(detector.DlibDetector):
     def __init__(self, blink_threshold, fps=10, ear_threshold=0.20):
         self._frame_rate = fps
         self._frame_length = 1 / fps
@@ -74,7 +73,7 @@ class EyeDlibDetector(DlibDetector):
         )
 
         result = 0
-        return DetectionData(result, detection_data)
+        return detector.DetectionData(result, detection_data)
 
 
 if __name__ == "__main__":
@@ -84,7 +83,7 @@ if __name__ == "__main__":
         print("Erro ao abrir a camera")
         exit()
 
-    detector = EyeDlibDetector(1)
+    eye_detector = EyeDlibDetector(1)
     prev = 0
     capture = True
     while capture:
@@ -101,7 +100,7 @@ if __name__ == "__main__":
             cap.release()
             capture = False
 
-        if time_elapsed > 1.0 / detector._frame_rate:
+        if time_elapsed > 1.0 / eye_detector._frame_rate:
             prev = time()
 
             data = detector._handle_frame(frame)

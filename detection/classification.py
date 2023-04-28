@@ -4,8 +4,8 @@ class KSSClassifier:
         self.eyes_result = eyes_result
         self.head_result = head_result
 
-    def calculate_eye_closed_percentage(self, eye_closed_frames):
-        return eye_closed_frames / self.num_frames
+    def calculate_eye_closed_percentage(self, closed_eye_count, frame_count):
+        return closed_eye_count / frame_count
 
     def calculate_kss_score(self, weight_dictionary):
         # eye_closed_percentage = self.calculate_eye_closed_percentage(eye_closed_frames)
@@ -52,3 +52,5 @@ class KSSClassifier:
             classification += "Alerta: Sonolento, cansado; precisa de aviso sonoro"
 
         return classification
+
+
