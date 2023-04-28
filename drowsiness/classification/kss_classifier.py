@@ -1,63 +1,56 @@
 import sys
 sys.path.append(r'drowsiness/')
 
+import numpy as np
 from detection.eye_insight_detector import EyeInsightDetector
 from detection.mouth_detector import MouthDlibDetector
 from detection.eye_mediapipe import create_frame_list
+from detection.head_detector import HeadDetector
 
 class KSSClassifier:
     def __init__(self, eyes_result, head_result, mouth_result):
         self.__eyes_result = eyes_result
-        #self.__head_result = head_result
+        self.__head_result = head_result
         self.__mouth_result = mouth_result
 
-    def __calculate_kss_score(self, weight_dictionary):
-        mouth = self.__mouth_result.data
-        eye = self.__eyes_result.data
-        #head = self.__head_result.data
+    def __calculate_kss_score(self):
+        mouth = self.__mouth_result.result
+        eye = self.__eyes_result.result
+        head = self.__head_result.result
         
-        mouth_score = (
-              (mouth["yawn_time"] * weight_dictionary["yawn_time_weight"])
-            + (mouth["yawn_percentage"] * weight_dictionary["yawn_percentage"])
-        )
-        
-        eye_score = (
-                  (eye["eye_opening"] * weight_dictionary["eye_opening_weight"])
-                + eye["closed_eyes_time"] * weight_dictionary["close_eyes_time_weight"]
-                + eye["blink_count"] * weight_dictionary["blink_count_weight"])
-        print(mouth_score)
-        print(eye_score)
-        score = (mouth_score + eye_score) / 2
+        """
+        head:  [head], [eyes], [mouth]
+        eyes:  [head], [eyes], [mouth]
+        mouth: [head], [eyes], [mouth]
+        """
+        comparison_matrix = np.array([[1, 3, 5], [1/3, 1, 3], [1/5, 1/3, 1]])
 
-        return round(score, 1) * 10
+        priority_vector = np.sum(comparison_matrix, axis=1) / np.sum(comparison_matrix)
 
-    def classify(self, weight_dictionary):
-        score = self.__calculate_kss_score(weight_dictionary)
+        head_weight = priority_vector[0]
+        eye_weight = priority_vector[1]
+        mouth_weight = priority_vector[2]
 
-        classification = f"[{score}] "
+        overall_tiredness = (head_weight * head) + (eye_weight * eye) + (mouth_weight * mouth)
+    
+        #score = (mouth_score + eye_score + head_score) / 3
+        score = overall_tiredness
 
-        if score <= 3:
-            classification += (
-                "Sem fadiga: Sentindo-se ativo, vital, alerta ou bem acordado"
-            )
-        elif score <= 6:
-            classification += "Aviso: Funcionando em niveis elevados, mas nao no pico; capaz de se concentrar"
-        else:
-            classification += "Alerta: Sonolento, cansado; precisa de aviso sonoro"
+        return int(round(score, 1) * 10)
 
-        return classification
+    def classify(self):
+        return self.__calculate_kss_score()
 
 if __name__ == "__main__":
     frames = create_frame_list('test/tired', "png")
-    eye_detector = EyeInsightDetector()
     mouth_detector = MouthDlibDetector()
-    eyes_result = eye_detector.execute(frames)
     mouth_result = mouth_detector.execute(frames)
-    head_result = None
+    print(mouth_result)
+    eye_detector = EyeInsightDetector()
+    head_detector = HeadDetector()
+    eyes_result = eye_detector.execute(frames)
+    head_result = head_detector.execute(frames)
     
     kss = KSSClassifier(eyes_result, head_result, mouth_result)
-    weight_dictionary = {
-        "eye_opening_weight": 0.4,"blink_count_weight": 0.2, "close_eyes_time_weight": 0.4,
-        "yawn_time_weight": 0.4, "yawn_percentage": 0.6
-    }
-    print(kss.classify(weight_dictionary))
+    
+    print(kss.classify())
