@@ -153,21 +153,24 @@ class HeadDetector(MediapipeHeadDetector):
             lateral_down_count * self._frame_length
         )
         
-        print(len(frame_data))
         # Result
         frontal_max = np.max([data_frontal["head_frontal"] for data_frontal in frame_data])
         frontal = np.array(
-             ((data_frontal["head_frontal"] - 0 / (frontal_max - 0)) for data_frontal in frame_data)
+             [((data_frontal["head_frontal"] - 0) / (frontal_max - 0)) for data_frontal in frame_data]
         )
 
         lateral_max = np.max([data_lateral["head_lateral"] for data_lateral in frame_data])
         lateral = np.array(
-            ((data_lateral["head_lateral"] - 0 / (lateral_max - 0)) for data_lateral in frame_data)
+            [((data_lateral["head_lateral"] - 0) / (lateral_max - 0)) for data_lateral in frame_data]
         )
 
         final_result_array = np.array(
             [(frontal[i] * 0.6) + (lateral[i] * 0.4) for i in range(len(frame_data))]
         )
+
+        for i in final_result_array:
+            if i >= 10:
+                print("Erro")
 
         final_result = np.mean(final_result_array)
 

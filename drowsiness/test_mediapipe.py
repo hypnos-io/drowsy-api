@@ -15,10 +15,10 @@ start_time = time.time()
 
 result_head = head.execute(frame_sequence)
 print("=-=-=-=-=-=-=-=-=")
-print("Detection Results: \n")
+print("\033[32mDetection Results: \033[0m\n")
 for key, value in result_head.data.items():
     print(f"{key}: {value:.2f}")
-print(result_head.json())
+print(f"\033[31mTotal Result: {result_head.result}\033[0m")
 print("=-=-=-=-=-=-=-=-=")
 
 current_time = time.time() - start_time
