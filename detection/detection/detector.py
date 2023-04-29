@@ -1,4 +1,3 @@
-import json
 from os import path
 from abc import ABC, abstractmethod
 
@@ -86,5 +85,5 @@ class DetectionData:
         self.result = result
         self.data = data
 
-    def json(self) -> str:
-        return json.dumps({"result": self.result, **self.data})
+    def to_dict(self):
+        return {"result": self.result, **self.data}

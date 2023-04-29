@@ -9,14 +9,14 @@ from detection.head_detector import HeadDetector
 
 class KSSClassifier:
     def __init__(self, eyes_result, head_result, mouth_result):
-        self.__eyes_result = eyes_result
-        self.__head_result = head_result
-        self.__mouth_result = mouth_result
+        self.eyes_result = eyes_result
+        self.head_result = head_result
+        self.mouth_result = mouth_result
 
     def __calculate_kss_score(self):
-        mouth = self.__mouth_result.result
-        eye = self.__eyes_result.result
-        head = self.__head_result.result
+        mouth = self.mouth_result.result
+        eye = self.eyes_result.result
+        head = self.head_result.result
         
         """
         head:  [head], [eyes], [mouth]
@@ -40,6 +40,16 @@ class KSSClassifier:
 
     def classify(self):
         return self.__calculate_kss_score()
+    
+    def set_results(self, eyes_result = None, head_result = None, mouth_result = None):
+        if eyes_result:
+            self.eyes_result = eyes_result
+
+        if head_result:
+            self.head_result = head_result
+            
+        if mouth_result:
+            self.mouth_result = mouth_result
 
 if __name__ == "__main__":
     frames = create_frame_list('test/tired', "png")

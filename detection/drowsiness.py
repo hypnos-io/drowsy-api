@@ -1,31 +1,44 @@
 import numpy as np
 
+from ws.entities import FatigueStatus
+
 from detection.handlers import ResizeHandler, CropHandler
 from detection.classification import KSSClassifier
-from detection.detection.eye_detector import EyeDlibDetector
+from detection.detection.eye_insight_detector import EyeInsightDetector
 from detection.detection.mouth_detector import MouthDlibDetector
-from detection.detection.head_detector  import HeadDetector
+from detection.detection.head_detector import HeadDetector
+
 
 class Drowsy:
     def __init__(self, fps: int = 24) -> None:
         self.fps = fps
 
-        self.detectors = (
-            EyeDlibDetector(1, fps),
-            MouthDlibDetector(fps),
-            HeadDetector()
-        )
-        
-        self.classifier = KSSClassifier()
+        self._eye = EyeInsightDetector(fps=fps)
+        self._mouth = MouthDlibDetector(fps=fps)
+        self._head = HeadDetector(fps=fps)
+
+        self.classifier = KSSClassifier(0, 0, 0)
         self.handler = CropHandler(ResizeHandler)
 
-    def _run_detectors(self, image):
-        for detector in self.detectors:
-            detector.
+    def detect(self, video: list[np.ndarray]) -> FatigueStatus:
+        eye_result = self._eye.execute(video)
+        mouth_result = self._mouth.execute(video)
+        head_result = self._head.execute(video)
 
+        self.classifier.set_results(
+            eye_result,
+            head_result,
+            mouth_result
+        )
 
+        kss = self.classifier.classify()
 
-    def detect(self, video: list[np.ndarray]):
-        
-        for frame in video:
-             self._run_detectors
+        return {
+            "kssScale": kss,
+            "detection": {
+                "eyes": eye_result.to_dict(),
+                "head": head_result.to_dict(),
+                "mouth": mouth_result.to_dict()
+            }
+        }
+    

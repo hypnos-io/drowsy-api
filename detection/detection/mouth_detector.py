@@ -3,8 +3,7 @@ from time import time
 import cv2 as cv
 import numpy as np
 
-from detection.classification import DetectionData
-from . import detector
+from detection.detection import detector
 
 
 OUTER_LIP = slice(48, 60)
@@ -39,7 +38,7 @@ class MouthDlibDetector(detector.DlibDetector):
 
         return data
 
-    def execute(self, images):
+    def execute(self, images) -> detector.DetectionData:
         detection_data = {"yawn_count": 0, "yawn_frame_count": 0}
 
         frame_data = []
@@ -71,7 +70,7 @@ class MouthDlibDetector(detector.DlibDetector):
         result = np.mean(area)
         detection_data["frames"] = frame_data
 
-        return DetectionData(result, detection_data)
+        return detector.DetectionData(result, detection_data)
 
 
 if __name__ == "__main__":
