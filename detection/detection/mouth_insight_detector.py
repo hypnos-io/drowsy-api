@@ -3,15 +3,14 @@ from time import time
 import cv2 as cv
 import numpy as np
 
-from detection.classification import DetectionData
-from . import detector
+from detection.detection import detector
 
 
-OUTER_LIP = slice(48, 60)
-INNER_LIP = slice(60, 68)
+OUTER_LIP = np.array([52, 64, 63, 67, 68, 61, 58, 59, 53, 56, 55])
+INNER_LIP = np.array([65, 66, 62, 70, 69, 57, 60, 54])
 
 
-class MouthDlibDetector(detector.DlibDetector):
+class MouthInsightDetector(detector.InsightDetector):
     def __init__(self, fps=24, min_area=200, min_duration=4) -> None:
         super().__init__()
         self._frame_rate = fps
@@ -26,12 +25,9 @@ class MouthDlibDetector(detector.DlibDetector):
         data = {}
 
         for face in faces:
-            landmarks = self._detect_landmarks(frame, face)
-            landmarks = np.array(landmarks.parts())
-
-            inner = np.array(
-                [self.point_tuple(point) for point in landmarks[INNER_LIP]]
-            )
+            landmarks = self._detect_landmarks(face)
+            
+            inner = np.array(landmarks[INNER_LIP])
 
             data["inner_area"] = cv.contourArea(inner)
             data["vertical_aperture"] = cv.norm(inner[2] - inner[-2])
@@ -65,13 +61,13 @@ class MouthDlibDetector(detector.DlibDetector):
 
         maximum = np.max([data["inner_area"] for data in frame_data])
         area = np.array(
-            [((data["inner_area"] - 0) / (maximum - 0)) for data in frame_data]
+            ((data["inner_area"] - 0) / (maximum - 0)) for data in frame_data
         )
 
         result = np.mean(area)
         detection_data["frames"] = frame_data
 
-        return DetectionData(result, detection_data)
+        return detector.DetectionData(result, detection_data)
 
 
 if __name__ == "__main__":
@@ -81,7 +77,7 @@ if __name__ == "__main__":
         print("Erro ao abrir a camera")
         exit()
 
-    mouth_detector = MouthDlibDetector()
+    detector = MouthInsightDetector()
     prev = 0
     capture = True
     while capture:
@@ -98,10 +94,10 @@ if __name__ == "__main__":
             cap.release()
             capture = False
 
-        if time_elapsed > 1.0 / mouth_detector._frame_rate:
+        if time_elapsed > 1.0 / detector._frame_rate:
             prev = time()
 
-            data = mouth_detector._handle_frame(frame)
+            data = detector._handle_frame(frame)
 
             y = 20
             for key, value in data.items():

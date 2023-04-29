@@ -11,6 +11,7 @@ RIGHT_EYE = slice(42, 48)
 
 class EyeDlibDetector(detector.DlibDetector):
     def __init__(self, blink_threshold, fps=10, ear_threshold=0.20):
+        super().__init__()
         self._frame_rate = fps
         self._frame_length = 1 / fps
 
@@ -67,7 +68,7 @@ class EyeDlibDetector(detector.DlibDetector):
 
             frame_data.append(data)
 
-        detection_data["ear_mean"] = np.mean(data["ear"] for data in frame_data)
+        ear = np.mean(data["ear"] for data in frame_data)
         detection_data["closed_time"] = (
             detection_data["closed_frame_count"] * self._frame_length
         )
@@ -109,7 +110,7 @@ if __name__ == "__main__":
             for key, value in data.items():
                 cv.putText(
                     frame,
-                    f"{key}: {int(value)}",
+                    f"{key}: {value:.2f}",
                     (10, y),
                     cv.FONT_HERSHEY_SIMPLEX,
                     0.8,
