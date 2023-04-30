@@ -22,7 +22,11 @@ class MouthDlibDetector(detector.DlibDetector):
     def _handle_frame(self, frame):
         faces = self._detect_faces(frame)
 
-        data = {}
+        data = {
+            "inner_area": self._yawn_area,
+            "vertical_aperture": 0,
+            "horizontal_aperture":0
+        }
 
         for face in faces:
             landmarks = self._detect_landmarks(frame, face)

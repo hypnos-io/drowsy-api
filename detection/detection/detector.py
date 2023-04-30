@@ -8,7 +8,7 @@ import insightface
 from insightface.app import FaceAnalysis
 
 
-MODULE_DIR = path.dirname("c:/Users/Callidus/Documents/drowsy-api/drowsiness/predictor")
+MODULE_DIR = path.dirname(r"C:\Users\tijol\Projetos\Hypnos\drowsy-api\detection\predictor")
 path.dirname(path.abspath(__file__))
 PREDICTOR_FACE_68 = dlib.shape_predictor(
     path.join(MODULE_DIR, "predictor", "shape_predictor_68_face_landmarks.dat")
@@ -59,7 +59,7 @@ class DlibDetector(AbstractDetector):
 
         return landmarks
 
-    def point_tuple(point):
+    def point_tuple(self, point):
         """Auxiliary method to convert Dlib Point object into coordinate tuple used by OpenCV"""
         return (point.x, point.y)
 

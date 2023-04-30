@@ -22,7 +22,7 @@ def base64_to_ndarray(base_64: str) -> np.ndarray:
     byte_array = np.frombuffer(bytes, dtype=np.uint8)
 
     # Decodifica os bytes para uma imagem em preto e branco
-    image = cv.imdecode(byte_array, cv.IMREAD_GRAYSCALE)
+    image = cv.imdecode(byte_array, cv.IMREAD_COLOR)
 
     return image
 

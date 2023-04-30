@@ -2,10 +2,10 @@ import sys
 sys.path.append(r'drowsiness/')
 
 import numpy as np
-from detection.eye_insight_detector import EyeInsightDetector
-from detection.mouth_detector import MouthDlibDetector
-from detection.eye_mediapipe import create_frame_list
-from detection.head_detector import HeadDetector
+from detection.detection.eye_insight_detector import EyeInsightDetector
+from detection.detection.mouth_detector import MouthDlibDetector
+from detection.detection.eye_mediapipe import create_frame_list
+from detection.detection.head_detector import HeadDetector
 
 class KSSClassifier:
     def __init__(self, eyes_result, head_result, mouth_result):
