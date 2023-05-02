@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css" type="text/css">
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+  <title>Testing Interface</title>
+</head>
+
+<body>
+  <h1>Testing Interface</h1>
+  <br />
+  <form id="video">
+    <video id="videoCam"></video>
+    <br /><br />
+    <button id="startBtn" type="submit">Open Camera</button>
+  </form>
+  <script src="cam.js"></script>
+  <script>
+    $('#video').submit(function (event) {
+      event.preventDefault();
+      openCam();
+    });
+  </script>
+
+</body>
+
+</html>
