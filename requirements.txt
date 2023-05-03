@@ -1,0 +1,15 @@
+dlib==19.24.1
+Flask==2.2.3
+insightface==0.7.3
+joblib==1.2.0
+matplotlib==3.7.1
+onnxruntime==1.14.1
+opencv-python==4.7.0.72
+scikit-image==0.20.0
+scikit-learn==1.2.2
+scipy==1.9.1
+socketio==0.2.1
+torch==2.0.0
+mediapipe
+torchaudio
+torchvision
