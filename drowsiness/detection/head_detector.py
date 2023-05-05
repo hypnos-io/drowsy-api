@@ -21,7 +21,7 @@ def create_frame_list(extension):
         return frames
 
 class HeadDetector(MediapipeHeadDetector):
-    def __init__(self, fps=10, frontal_threshold=110, lateral_threshold=35):
+    def __init__(self, fps=10, frontal_threshold=90, lateral_threshold=25):
         super().__init__()
         self.frontal_threshold = frontal_threshold
         self.lateral_threshold = lateral_threshold
