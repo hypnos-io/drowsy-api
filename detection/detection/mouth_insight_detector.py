@@ -3,7 +3,7 @@ from time import time
 import cv2 as cv
 import numpy as np
 
-from detection.detection import detector
+from detection import detector
 
 
 OUTER_LIP = np.array([52, 64, 63, 67, 68, 61, 58, 59, 53, 56, 55])
@@ -11,10 +11,9 @@ INNER_LIP = np.array([65, 66, 62, 70, 69, 57, 60, 54])
 
 
 class MouthInsightDetector(detector.InsightDetector):
-    def __init__(self, fps=24, min_area=200, min_duration=4) -> None:
+    def __init__(self, min_area=200, min_duration=4) -> None:
         super().__init__()
         self._frame_rate = fps
-        self._frame_length = 1 / fps
 
         self._yawn_area = min_area
         self._yawn_duration = min_duration
@@ -22,7 +21,11 @@ class MouthInsightDetector(detector.InsightDetector):
     def _handle_frame(self, frame):
         faces = self._detect_faces(frame)
 
-        data = {}
+        data = {
+            "inner_area": self._yawn_area,
+            "vertical_aperture": 0,
+            "horizontal_aperture":0
+        }
 
         for face in faces:
             landmarks = self._detect_landmarks(face)
@@ -61,9 +64,8 @@ class MouthInsightDetector(detector.InsightDetector):
 
         maximum = np.max([data["inner_area"] for data in frame_data])
         area = np.array(
-            ((data["inner_area"] - 0) / (maximum - 0)) for data in frame_data
+            [(data["inner_area"] - 0) / (maximum - 0) for data in frame_data]
         )
-
         result = np.mean(area)
         detection_data["frames"] = frame_data
 

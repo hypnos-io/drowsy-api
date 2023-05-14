@@ -3,17 +3,17 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 import mediapipe as mp
-import dlib
+# import dlib
 import insightface
 from insightface.app import FaceAnalysis
 
 
-MODULE_DIR = path.dirname(r"C:\Users\tijol\Projetos\Hypnos\drowsy-api\detection\predictor")
-path.dirname(path.abspath(__file__))
-PREDICTOR_FACE_68 = dlib.shape_predictor(
-    path.join(MODULE_DIR, "predictor", "shape_predictor_68_face_landmarks.dat")
-)
-DETECTOR_FHOG = dlib.get_frontal_face_detector()
+# MODULE_DIR = path.dirname(r"C:\Users\tijol\Projetos\Hypnos\drowsy-api\detection\predictor")
+# path.dirname(path.abspath(__file__))
+# PREDICTOR_FACE_68 = dlib.shape_predictor(
+#     path.join(MODULE_DIR, "predictor", "shape_predictor_68_face_landmarks.dat")
+# )
+# DETECTOR_FHOG = dlib.get_frontal_face_detector()
 
 
 class AbstractDetector(ABC):
@@ -23,12 +23,13 @@ class AbstractDetector(ABC):
 
 
 class InsightDetector(AbstractDetector):
-    def __init__(self):
+    def __init__(self, fps=10):
         self.__app = FaceAnalysis(
             allowed_modules=["detection", "landmark_2d_106"],
             providers=["CPUExecutionProvider"],
         )
         self.__app.prepare(ctx_id=0, det_size=(640, 640))
+        self._frame_length = 1 / fps
 
     def _detect_faces(self, source):
         faces = self.__app.get(source)

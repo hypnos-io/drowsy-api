@@ -3,7 +3,7 @@ from time import time
 import cv2 as cv
 import numpy as np
 
-from detection.detection import detector
+from detection import detector
 
 
 OUTER_LIP = slice(48, 60)

@@ -1,19 +1,35 @@
 import numpy as np
+import cv2 as cv
 
-from detection.detection import detector, eye_mediapipe
+from detection import detector
+import glob
+
+def create_frame_list(location, extension):
+        images = glob.glob(f"C:/Users/Callidus/Documents/Github/drowsy-api/*.{extension}")
+    
+        # Apply image processing techniques
+        frames = [cv.imread(image) for image in images]
+        frames = [cv.resize(frame, (640, 360)) for frame in frames]  # resize images to a standard size
+        frames = [cv.cvtColor(frame, cv.COLOR_RGB2BGR) for frame in frames]
+        
+        # Apply camera calibration
+        camera_matrix = np.array([[1000, 0, 320], [0, 1000, 180], [0, 0, 1]])  # example camera matrix
+        
+        distortion_coeffs = np.array([0.1, -0.05, 0, 0])  # example distortion coefficients
+        frames = [cv.undistort(frame, camera_matrix, distortion_coeffs) for frame in frames]
+        
+        return frames
 
 # [0]P1 [1]P2 [2]P3 [3]P4 [4]P5 [5]P6
 left_points = np.array([35, 41, 42, 39, 37, 36])
 right_points = np.array([89, 95, 96, 93, 91, 90])
 
 class EyeInsightDetector(detector.InsightDetector):
-    def __init__(self, ear_threshold=0.17, closed_eyes_threshold=3, fps=10, video_lenght=30):
+    def __init__(self, ear_threshold=0.17, closed_eyes_threshold=3, video_lenght=30):
         super().__init__()
         
         self._blink_max = 20
-        self.__frame_length = 1 / fps
         self.__ear_threshold = ear_threshold
-        #self.__blink_threshold = blink_threshold
         self.__video_length = video_lenght
         self.__closed_eyes_threshold = closed_eyes_threshold
         
@@ -86,14 +102,15 @@ class EyeInsightDetector(detector.InsightDetector):
 if __name__ == '__main__':
     eye_detector = EyeInsightDetector(ear_threshold=0.17, closed_eyes_threshold=3, fps=10, video_lenght=32)
     
-    frame_sequence = eye_mediapipe.create_frame_list("test/not_tired", "png")
+    frame_sequence = create_frame_list("", "png")
     if len(frame_sequence) <= 0:
         print("Lista vazia.")
     else:
         print("\nRunning detection....")
         response = eye_detector.execute(frame_sequence)
         print("=" * 30 + " RESULTS: " + 30 * "=")    
-        response.show()
+        print(response.data)
+        print(response.result)
         if response.result < 0.4:
             print("Not tired")
         elif 0.4 <= response.result < 0.7:
