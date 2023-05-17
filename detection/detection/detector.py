@@ -1,9 +1,8 @@
 from os import path
 from abc import ABC, abstractmethod
 
-import numpy as np
 import mediapipe as mp
-# import dlib
+import numpy as np
 import insightface
 from insightface.app import FaceAnalysis
 

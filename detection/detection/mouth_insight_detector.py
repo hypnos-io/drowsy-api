@@ -1,10 +1,9 @@
 from time import time
 
+#from detection.detection import detector
 import cv2 as cv
 import numpy as np
-
-from detection.detection import detector
-#from detection import detector
+from detection import detector
 
 OUTER_LIP = np.array([52, 64, 63, 67, 68, 61, 58, 59, 53, 56, 55])
 INNER_LIP = np.array([65, 66, 62, 70, 69, 57, 60, 54])

@@ -1,7 +1,6 @@
 import numpy as np
 
-#from ws.entities import FatigueStatus
-
+from ws.entities import FatigueStatus
 from detection.handlers import ResizeHandler, CropHandler
 from detection.classification import KSSClassifier
 from detection.detection.eye_insight_detector import EyeInsightDetector

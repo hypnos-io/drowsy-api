@@ -1,12 +1,11 @@
+#from detection.detection import detector
+from detection import detector
+import glob
 import numpy as np
 import cv2 as cv
 
-from detection.detection import detector
-# from detection import detector
-import glob
-
 def create_frame_list():
-        images = glob.glob(r"C:\Users\Callidus\Documents\Github\drowsy-api\*.png")
+        images = glob.glob(r"C:\Users\Callidus\Documents\Github\hypnos\drowsy-api\*.jpg")
     
         frames = [cv.imread(image) for image in images]
         frames = [cv.resize(frame, (640, 360)) for frame in frames]  

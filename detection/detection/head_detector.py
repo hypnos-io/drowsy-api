@@ -1,11 +1,10 @@
 import glob
 from time import time
 
+#from detection.detection import detector
+from detection import detector
 import cv2 as cv
 import numpy as np
-
-from detection.detection import detector
-# from detection import detector
 
 # def load_image(image):
 #     return cv.imread(image, v.IMREAD_GRAYSCALE)

@@ -1,13 +1,12 @@
 import sys
 
+# from detection.detection.eye_insight_detector import EyeInsightDetector, create_frame_list
+# from detection.detection.mouth_insight_detector import MouthInsightDetector 
+# from detection.detection.head_detector import HeadDetector
+from detection.eye_insight_detector import EyeInsightDetector, create_frame_list
+from detection.mouth_insight_detector import MouthInsightDetector
+from detection.head_detector import HeadDetector
 import numpy as np
-from detection.detection.eye_insight_detector import EyeInsightDetector, create_frame_list
-from detection.detection.mouth_insight_detector import MouthInsightDetector 
-from detection.detection.head_detector import HeadDetector
-
-# from detection.eye_insight_detector import EyeInsightDetector, create_frame_list
-# from detection.mouth_insight_detector import MouthInsightDetector
-# from detection.head_detector import HeadDetector
 
 
 class KSSClassifier:
