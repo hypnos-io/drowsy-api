@@ -4,7 +4,8 @@ from time import time
 import cv2 as cv
 import numpy as np
 
-from detection import detector
+from detection.detection import detector
+# from detection import detector
 
 # def load_image(image):
 #     return cv.imread(image, v.IMREAD_GRAYSCALE)
@@ -122,7 +123,7 @@ class HeadDetector(detector.MediapipeHeadDetector):
                 frontal_down_consecutives += 1
 
                 if frontal_down_consecutives > consec_frames_threshold_frontal:
-                            print(f"\033[31m Frontal :{frames}\033[0m")
+                            #print(f"\033[31m Frontal :{frames}\033[0m")
                             frontal_down_count += 1
 
             else:
@@ -134,7 +135,7 @@ class HeadDetector(detector.MediapipeHeadDetector):
                 lateral_down_consecutives += 1
 
                 if lateral_down_consecutives > consec_frames_threshold_lateral:
-                    print(f"\033[32m Latereal :{frames}\033[0m")
+                    #print(f"\033[32m Latereal :{frames}\033[0m")
                     lateral_down_count += 1 
             
             else:
@@ -172,7 +173,7 @@ class HeadDetector(detector.MediapipeHeadDetector):
 
         final_result = np.mean(final_result_array)
 
-        return detector.DetectionData(final_result, detection_data)
+        return detector.DetectionData(round(final_result, 1), detection_data)
 
 if __name__ == "__main__":
 

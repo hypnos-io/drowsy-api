@@ -1,7 +1,7 @@
 import cv2
 
 # Open the video file
-cap = cv2.VideoCapture(r'detection\testing\frames\tired.mp4')
+cap = cv2.VideoCapture(r'detection\testing\frames\kinda_tired.mp4')
 fps = cap.get(cv2.CAP_PROP_FPS)
 interval = int(round(fps / 10))
 count = 0

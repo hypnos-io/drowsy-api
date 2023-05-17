@@ -1,21 +1,21 @@
 import numpy as np
 import cv2 as cv
 
-from detection import detector
+from detection.detection import detector
+# from detection import detector
 import glob
 
-def create_frame_list(location, extension):
-        images = glob.glob(f"C:/Users/Callidus/Documents/Github/drowsy-api/*.{extension}")
+def create_frame_list():
+        images = glob.glob(r"C:\Users\Callidus\Documents\Github\drowsy-api\*.png")
     
-        # Apply image processing techniques
         frames = [cv.imread(image) for image in images]
-        frames = [cv.resize(frame, (640, 360)) for frame in frames]  # resize images to a standard size
+        frames = [cv.resize(frame, (640, 360)) for frame in frames]  
         frames = [cv.cvtColor(frame, cv.COLOR_RGB2BGR) for frame in frames]
         
         # Apply camera calibration
-        camera_matrix = np.array([[1000, 0, 320], [0, 1000, 180], [0, 0, 1]])  # example camera matrix
+        camera_matrix = np.array([[1000, 0, 320], [0, 1000, 180], [0, 0, 1]]) 
         
-        distortion_coeffs = np.array([0.1, -0.05, 0, 0])  # example distortion coefficients
+        distortion_coeffs = np.array([0.1, -0.05, 0, 0])
         frames = [cv.undistort(frame, camera_matrix, distortion_coeffs) for frame in frames]
         
         return frames
@@ -25,9 +25,9 @@ left_points = np.array([35, 41, 42, 39, 37, 36])
 right_points = np.array([89, 95, 96, 93, 91, 90])
 
 class EyeInsightDetector(detector.InsightDetector):
-    def __init__(self, ear_threshold=0.17, closed_eyes_threshold=3, video_lenght=30):
+    def __init__(self, fps, ear_threshold=0.14, closed_eyes_threshold=3, video_lenght=30):
         super().__init__()
-        
+        self.__frame_length = 1 / fps
         self._blink_max = 20
         self.__ear_threshold = ear_threshold
         self.__video_length = video_lenght
@@ -45,34 +45,27 @@ class EyeInsightDetector(detector.InsightDetector):
     
     def _handle_frame_(self, frame):
         faces = self._detect_faces(frame)
-        #tim = frame.copy()
-        average_ear = None
-
+        ear_values = []
         for face in faces:
-                landmarks = self._detect_landmarks(face)
-                left_eye = np.array(landmarks[left_points])
-                right_eye = np.array(landmarks[right_points])
-                
-                left_ear = self.__calculate_ear__(left_eye)
-                right_ear = self.__calculate_ear__(right_eye)
-                average_ear = np.mean((left_ear, right_ear))
-                
-        return average_ear
+            landmarks = self._detect_landmarks(face)
+            left_eye = np.array(landmarks[left_points])
+            right_eye = np.array(landmarks[right_points])
+            ear_values.append(self.__calculate_ear__(left_eye))
+            ear_values.append(self.__calculate_ear__(right_eye))
+        return np.mean(ear_values)
+
             
     def execute(self, images) -> detector.DetectionData:
         detection_data = {"eye_opening": 0.0, "blink_count": 0, "closed_eyes_time": 0.0}
         weights = {"eye_opening_weight": 0.4,"blink_count_weight": 0.2, "close_eyes_time_weight": 0.4}
         ear_list = []
         close_frames = 0
-        i = 0
         for frame in images:
-            i += 1
             ear = self._handle_frame_(frame)
             if ear is not None:
                 ear_list.append(ear)
                 if ear < self.__ear_threshold:
                     close_frames += 1
-                    #print(f"closed at frame_{i} | sequence: {close_frames}")
                     detection_data["closed_eyes_time"] += 1
                 else:
                     if 1 <= close_frames < self.__closed_eyes_threshold:
@@ -83,9 +76,7 @@ class EyeInsightDetector(detector.InsightDetector):
             return detector.DetectionData(0, {"blink_count": 0, "eye_opening": 0, "closed_eyes_time": 0})
 
         ear_array = np.array(ear_list)
-        ear_min = np.min(ear_array)
-        ear_max = np.max(ear_array)
-        ear_norm = abs(ear_array - ear_max) / abs(ear_min - ear_max)
+        ear_norm = (ear_array - np.min(ear_array)) / (np.max(ear_array) - np.min(ear_array))
         average_ear = np.mean(ear_norm)
 
         detection_data["eye_opening"] = average_ear
@@ -100,9 +91,9 @@ class EyeInsightDetector(detector.InsightDetector):
         return detector.DetectionData(round(result, 1), detection_data)
             
 if __name__ == '__main__':
-    eye_detector = EyeInsightDetector(ear_threshold=0.17, closed_eyes_threshold=3, fps=10, video_lenght=32)
+    eye_detector = EyeInsightDetector(fps=10, ear_threshold=0.14, closed_eyes_threshold=3, video_lenght=30)
     
-    frame_sequence = create_frame_list("", "png")
+    frame_sequence = create_frame_list()
     if len(frame_sequence) <= 0:
         print("Lista vazia.")
     else:
