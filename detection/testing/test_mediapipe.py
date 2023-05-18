@@ -1,6 +1,6 @@
 import time
 
-from detection.head_detector import HeadDetector, create_frame_list
+from detection.detection.head import HeadDetector, create_frame_list
 
 head = HeadDetector()
 
