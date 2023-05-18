@@ -55,6 +55,16 @@ class KSSClassifier:
         if mouth_result:
             self.mouth_result = mouth_result
 
+    def status(self) -> FatigueStatus:
+        return {
+            "kssScale": self.classify(),
+            "detection": {
+                "eyes": self.eyes_result.to_dict(),
+                "head": self.head_result.to_dict(),
+                "mouth": self.mouth_result.to_dict()
+            }
+        }
+
 if __name__ == "__main__":
     fps = 10
     video = create_frame_list()

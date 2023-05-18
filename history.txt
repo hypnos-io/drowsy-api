@@ -1,0 +1,6 @@
+conda config --set pip_interop_enabled True
+conda install "python-socketio[asyncio_client]"
+conda install -c conda-forge opencv
+pip install -U onnxruntime-gpu
+pip install -U insightface
+pip install -U mediapipe

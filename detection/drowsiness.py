@@ -1,45 +1,36 @@
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
+
 import numpy as np
 
 from ws.entities import FatigueStatus
 from detection.handlers import ResizeHandler, CropHandler
 from detection.classification import KSSClassifier
-from detection.detection.eye_insight_detector import EyeInsightDetector
-from detection.detection.mouth_insight_detector import MouthInsightDetector
-from detection.detection.head_detector import HeadDetector
+from detection.detection import detector, eye_insight_detector, mouth_detector, head_detector
 
 
-class Drowsy:
-    def __init__(self, fps: int = 24) -> None:
-        self.fps = fps
+classifier = KSSClassifier(0, 0, 0)
+handlers = CropHandler(ResizeHandler)
 
-        self._eye = EyeInsightDetector(fps=fps)
-        self._mouth = MouthInsightDetector(fps=fps)
-        self._head = HeadDetector(fps=fps)
+FRAME_RATE = 24
+insight_face = detector.InsightDetector
 
-        self.classifier = KSSClassifier(0, 0, 0)
-        self.handler = CropHandler(ResizeHandler)
+def detect(video: list[np.ndarray]) -> FatigueStatus:
+    with ThreadPoolExecutor() as executor:
+        faces = executor.map(insight_face['faces'], video)
 
-    def detect(self, video: list[np.ndarray]) -> FatigueStatus:
-        eye_result = self._eye.execute(video)
-        mouth_result = self._mouth.execute(video)
-        head_result = self._head.execute(video)
+    landmarks = map(insight_face['landmarks'], faces)
 
-        self.classifier.set_results(
-            eye_result,
-            head_result,
-            mouth_result
-        )
+    eye_result = eye_insight_detector.execute(landmarks)
+    # mouth_result = mouth_detector.execute(video)
+    # head_result = head_detector.execute(video)
 
-        kss = self.classifier.classify()
+    classifier.set_results(
+        eye_result,
+        #head_result,                   
+        #mouth_result      
+    )
 
-        return {
-            "kssScale": kss,
-            "detection": {
-                "eyes": eye_result.to_dict(),
-                "head": head_result.to_dict(),
-                "mouth": mouth_result.to_dict()
-            }
-        }
-        
-if __name__ == "__main__":
-    print("Hi")
+    return classifier.status()
+
+    

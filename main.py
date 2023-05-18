@@ -1,8 +1,8 @@
 import socketio
 
+
 from ws.client import SocketManager
 from detection.drowsiness import Drowsy
-
 
 sio_client = socketio.Client()
 fatigue_detector = Drowsy()
