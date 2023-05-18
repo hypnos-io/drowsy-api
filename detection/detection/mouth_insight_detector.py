@@ -10,8 +10,8 @@ INNER_LIP = np.array([65, 66, 62, 70, 69, 57, 60, 54])
 
 
 class MouthInsightDetector(detector.InsightDetector):
-    def __init__(self, fps=10, video_lenght=30, min_area=300, min_duration=4) -> None:
-        super().__init__()
+    def __init__(self, app, fps=10, video_lenght=30, min_area=300, min_duration=4) -> None:
+        super().__init__(app=app)
 
         self._yawn_area = min_area
         self._fps = fps

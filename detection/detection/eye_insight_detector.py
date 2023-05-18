@@ -5,7 +5,7 @@ import numpy as np
 import cv2 as cv
 
 def create_frame_list():
-        images = glob.glob(r"C:\Users\Callidus\Documents\Github\hypnos\drowsy-api\*.jpg")
+        images = glob.glob(r"C:\Users\Callidus\Documents\Github\hypnos\drowsy-api\*.png")
     
         frames = [cv.imread(image) for image in images]
         frames = [cv.resize(frame, (640, 360)) for frame in frames]  
@@ -24,8 +24,8 @@ left_points = np.array([35, 41, 42, 39, 37, 36])
 right_points = np.array([89, 95, 96, 93, 91, 90])
 
 class EyeInsightDetector(detector.InsightDetector):
-    def __init__(self, fps, ear_threshold=0.14, closed_eyes_threshold=3, video_lenght=30):
-        super().__init__()
+    def __init__(self, fps, app, ear_threshold=0.14, closed_eyes_threshold=3, video_lenght=30):
+        super().__init__(app=app)
         self.__frame_length = 1 / fps
         self._blink_max = 20
         self.__ear_threshold = ear_threshold
@@ -90,7 +90,8 @@ class EyeInsightDetector(detector.InsightDetector):
         return detector.DetectionData(round(result, 1), detection_data)
             
 if __name__ == '__main__':
-    eye_detector = EyeInsightDetector(fps=10, ear_threshold=0.14, closed_eyes_threshold=3, video_lenght=30)
+    app = detector.initalize_app()
+    eye_detector = EyeInsightDetector(fps=10, app=app, ear_threshold=0.14, closed_eyes_threshold=3, video_lenght=30)
     
     frame_sequence = create_frame_list()
     if len(frame_sequence) <= 0:

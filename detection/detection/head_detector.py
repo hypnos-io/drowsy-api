@@ -1,7 +1,7 @@
 import glob
 from time import time
 
-from detector import DetectionData
+from detection.detector import DetectionData, MediapipeHeadDetector
 import cv2 as cv
 import numpy as np
 import winsound

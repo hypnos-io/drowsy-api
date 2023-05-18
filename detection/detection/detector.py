@@ -6,11 +6,13 @@ import numpy as np
 import insightface
 from insightface.app import FaceAnalysis
 
-app = FaceAnalysis(
-            allowed_modules=["detection", "landmark_2d_106"],
-            providers=["CPUExecutionProvider"],
-        )
-app.prepare(ctx_id=0, det_size=(640, 640))
+def initalize_app():
+    app = FaceAnalysis(
+                allowed_modules=["detection", "landmark_2d_106"],
+                providers=["CPUExecutionProvider"],
+            )
+    app.prepare(ctx_id=0, det_size=(640, 640))
+    return app
 
 class AbstractDetector(ABC):
     @abstractmethod
@@ -18,12 +20,14 @@ class AbstractDetector(ABC):
         pass
     
 class InsightDetector(AbstractDetector):
+    def __init__(self, app):
+        self._app = app
     
     def _handle_frame(self, frame) -> float:
         pass
     
     def _detect_faces(self, image):
-        return app.get(img=image)
+        return self._app.get(img=image)
 
     def _detect_landmarks(self, face):
         landmarks = face.landmark_2d_106

@@ -6,6 +6,7 @@ import sys
 from detection.eye_insight_detector import EyeInsightDetector, create_frame_list
 from detection.mouth_insight_detector import MouthInsightDetector
 from detection.head_detector import HeadDetector
+from detection.detector import initalize_app
 import numpy as np
 
 
@@ -25,9 +26,9 @@ class KSSClassifier:
         eyes:  [head], [eyes], [mouth]
         mouth: [head], [eyes], [mouth]
         """
-        comparison_matrix = np.array([[1, 3, 5], 
-                                      [1/3, 1, 1/3], 
-                                      [1/5, 3, 1]])
+        comparison_matrix = np.array([[1, 1/3, 5], 
+                                      [3, 1, 3], 
+                                      [1/5, 1/3, 1]])
 
         priority_vector = np.sum(comparison_matrix, axis=1) / np.sum(comparison_matrix)
 
@@ -60,14 +61,19 @@ if __name__ == "__main__":
     if len(video) <= 0:
         print("Lista vazia.")
     else:
-        eye = EyeInsightDetector(fps=fps)
-        mouth = MouthInsightDetector(fps=fps)
+        print("Running detection...")
+        app = initalize_app()
+        eye = EyeInsightDetector(fps=fps, app=app)
+        mouth = MouthInsightDetector(fps=fps, app=app)
         head = HeadDetector(fps=fps)
         classifier = KSSClassifier(0, 0, 0)
         
         eye_result = eye.execute(video)
+        print("Deteccção dos olhos completa. Iniciando MouthDetector")
         mouth_result = mouth.execute(video)
+        print('Detecção da boca completa. Iniciando HeadDetector')
         head_result = head.execute(video)
+        print("Detecção da cabeça completa. Iniciando classficação.")
         
         classifier.set_results(
                 eye_result,
@@ -80,7 +86,7 @@ if __name__ == "__main__":
         print(f"KSS: {kss}")
         if kss < 0.4:
             print("Not tired")
-        elif 0.4 <= response.result < 0.7:
+        elif 0.4 <= kss < 0.7:
             print("Kinda tired")
         else:
             print("Tired")
