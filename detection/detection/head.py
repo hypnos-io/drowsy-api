@@ -91,14 +91,13 @@ def handle_frame(frame):
     data = {"head_frontal": 0, "head_lateral": 0}
 
     if results.pose_landmarks:
-        for _ in results.pose_landmarks.landmark:
-            right_ear_pos, left_ear_pos, nose_pos = get_head(results, height, width)
+        right_ear_pos, left_ear_pos, nose_pos = get_head(results, height, width)
 
-            head_frontal = calculate_head_frontal(right_ear_pos, nose_pos, left_ear_pos)
-            head_lateral = calculate_head_lateral(right_ear_pos, left_ear_pos)
+        head_frontal = calculate_head_frontal(right_ear_pos, nose_pos, left_ear_pos)
+        head_lateral = calculate_head_lateral(right_ear_pos, left_ear_pos)
 
-            data["head_frontal"] = head_frontal
-            data["head_lateral"] = head_lateral
+        data["head_frontal"] = head_frontal
+        data["head_lateral"] = head_lateral
     else:
         return None
 
