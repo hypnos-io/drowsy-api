@@ -1,10 +1,10 @@
 import glob
 from time import time
 
-#from detection.detection import detector
-from detection import detector
+from detector import DetectionData
 import cv2 as cv
 import numpy as np
+import winsound
 
 # def load_image(image):
 #     return cv.imread(image, v.IMREAD_GRAYSCALE)
@@ -18,15 +18,16 @@ def create_frame_list(extension):
 
         return frames
 
-class HeadDetector(detector.MediapipeHeadDetector):
-    def __init__(self, fps=10, frontal_threshold=110, lateral_threshold=35):
+class HeadDetector(MediapipeHeadDetector):
+    def __init__(self, fps=10, frontal_threshold=120, lateral_threshold=20, video_lenght=34):
         super().__init__()
         self.frontal_threshold = frontal_threshold
         self.lateral_threshold = lateral_threshold
-        
+        self._video_lenght = video_lenght
         self.frames = []
         self._frame_rate = fps
         self._frame_length = 1 / self._frame_rate
+        
 
     def __get_head__(self, results, frame):
         RIGHT_EAR_INDEX = self.mp_pose.PoseLandmark.RIGHT_EAR
@@ -59,7 +60,8 @@ class HeadDetector(detector.MediapipeHeadDetector):
         
         if b[1] < a[1] - 17 or b[1] < c[1] - 17:
             angle = 140
-
+    
+         
         return angle
 
     def __calculate_head_lateral__(self, a, b):
@@ -86,10 +88,16 @@ class HeadDetector(detector.MediapipeHeadDetector):
         if results.pose_landmarks:
                 for pose_landmarks in results.pose_landmarks.landmark:
                     right_ear_pos, left_ear_pos, nose_pos = self.__get_head__(results, frame)
+
+
                     head_frontal = self.__calculate_head_frontal__(right_ear_pos, nose_pos, left_ear_pos)
                     head_lateral = self.__calculate_head_lateral__(right_ear_pos, left_ear_pos)
+
                     data["head_frontal"] = head_frontal
                     data["head_lateral"] = head_lateral
+        else: 
+            return None
+
         return data
     
     def execute(
@@ -100,10 +108,23 @@ class HeadDetector(detector.MediapipeHeadDetector):
         
         detection_data = {
             "total_frontal_down_time": 0,
-            "head_frontal_mean": 0,
+            "head_frontal_angle_mean": 0,
             "total_lateral_down_time": 0,
-            "head_lateral_mean": 0,
+            "head_lateral_angle_mean": 0,
+            "total_frontal_down_count": 0,
+            "total_lateral_down_count": 0,
             }
+
+        individual_weights = {
+            "frontal_angle_mean_weight": 0.2,
+            "frontal_down_time_weight": 0.8,
+            "lateral_angle_mean_weight": 0.8,
+            "lateral_down_time_weight": 0.2,
+            "frontal_down_count_weight": 0.5,
+            "lateral_down_count_weight": 0.5,
+            "frontal_weight": 0.8,
+            "lateral_weight": 0.2
+        }
         
         lateral_down_count = 0
         frontal_down_count = 0
@@ -112,67 +133,80 @@ class HeadDetector(detector.MediapipeHeadDetector):
         lateral_down_consecutives = 0
         
         frame_data = []
+
         frames = 0
         for frame in images:
             frames += 1
             data = self._handle_frame(frame)
-            
-            # Head frontal
-            if data["head_frontal"] < self.frontal_threshold:
-                frontal_down_consecutives += 1
 
-                if frontal_down_consecutives > consec_frames_threshold_frontal:
-                            #print(f"\033[31m Frontal :{frames}\033[0m")
-                            frontal_down_count += 1
+            if data is not None:
+                # Head frontal
+                if data["head_frontal"] < self.frontal_threshold:
+                    frontal_down_consecutives += 1
 
-            else:
-                frontal_down_consecutives = 0
+                    if frontal_down_consecutives < 2:
+                        detection_data["total_frontal_down_count"] += 1
+                    
+
+                    if frontal_down_consecutives > consec_frames_threshold_frontal:
+                        print(f"\033[31m Frontal :{frames}\033[0m | Angle: {data['head_frontal']}")
+                        frontal_down_count += 1
+
+                else:
+                    frontal_down_consecutives = 0
 
 
-            # # Head lateral
-            if data["head_lateral"] > self.lateral_threshold:
-                lateral_down_consecutives += 1
+                # # Head lateral
+                if data["head_lateral"] > self.lateral_threshold:
+                    lateral_down_consecutives += 1
 
-                if lateral_down_consecutives > consec_frames_threshold_lateral:
-                    #print(f"\033[32m Latereal :{frames}\033[0m")
-                    lateral_down_count += 1 
-            
-            else:
-                lateral_down_consecutives = 0
+                    if frontal_down_consecutives < 2:
+                        detection_data["total_lateral_down_count"] += 1
 
-            frame_data.append(data)
+                    if lateral_down_consecutives > consec_frames_threshold_lateral:
+                        print(f"\033[32m Latereal :{frames}\033[0m | Angle: {data['head_lateral']}")
+                        lateral_down_count += 1 
+                
+                else:
+                    lateral_down_consecutives = 0
 
-        detection_data["head_frontal_mean"] = np.mean([data_frontal["head_frontal"] for data_frontal in frame_data])
+                frame_data.append(data)
+
+        frontal_angle_list = np.array([data_frontal["head_frontal"] for data_frontal in frame_data])
+        lateral_angle_list = np.array([data_lateral["head_lateral"] for data_lateral in frame_data])
+        
+        frontal_norm = ((frontal_angle_list - np.max(frontal_angle_list)) / (np.min(frontal_angle_list) - np.max(frontal_angle_list) ))
+        lateral_norm = ((lateral_angle_list - np.min(lateral_angle_list)) / (np.max(lateral_angle_list) - np.min(lateral_angle_list)))
+
+        detection_data["head_frontal_angle_mean"] = np.mean(frontal_norm)
+        detection_data["head_lateral_angle_mean"] = np.mean(lateral_norm)
+        
+
         detection_data["total_frontal_down_time"] = (
-            frontal_down_count * self._frame_length
+            (frontal_down_count * self._frame_length) / self._video_lenght
         )
-        detection_data["head_lateral_mean"] = np.mean([data_lateral["head_lateral"] for data_lateral in frame_data])
         detection_data["total_lateral_down_time"] = (
-            lateral_down_count * self._frame_length
+            (lateral_down_count * self._frame_length) / self._video_lenght
         )
         
         # Result
-        frontal_max = np.max([data_frontal["head_frontal"] for data_frontal in frame_data])
-        frontal = np.array(
-             [((data_frontal["head_frontal"] - 0) / (frontal_max - 0)) for data_frontal in frame_data]
+        final_result_frontal = (
+                        detection_data["head_frontal_angle_mean"] * individual_weights["frontal_angle_mean_weight"] +
+                        detection_data["total_frontal_down_time"] * individual_weights["frontal_down_time_weight"] +
+                        detection_data["total_frontal_down_count"] * individual_weights["frontal_down_count_weight"]
+                        )
+        
+        final_result_lateral = (
+            detection_data["head_lateral_angle_mean"] * individual_weights["lateral_angle_mean_weight"] +
+            detection_data["total_lateral_down_time"] * individual_weights["lateral_down_time_weight"] +
+            detection_data["total_lateral_down_count"] * individual_weights["lateral_down_count_weight"]
+
         )
 
-        lateral_max = np.max([data_lateral["head_lateral"] for data_lateral in frame_data])
-        lateral = np.array(
-            [((data_lateral["head_lateral"] - 0) / (lateral_max - 0)) for data_lateral in frame_data]
-        )
+        result = ((final_result_frontal * individual_weights["frontal_weight"]) + final_result_lateral * individual_weights["lateral_weight"]) / 2
 
-        final_result_array = np.array(
-            [(frontal[i] * 0.6) + (lateral[i] * 0.4) for i in range(len(frame_data))]
-        )
-
-        for i in final_result_array:
-            if i >= 10:
-                print("Erro")
-
-        final_result = np.mean(final_result_array)
-
-        return detector.DetectionData(round(final_result, 1), detection_data)
+        print(result)
+        return DetectionData(round(result, 1), detection_data)
 
 if __name__ == "__main__":
 
@@ -206,18 +240,19 @@ if __name__ == "__main__":
             data = head_detector._handle_frame(frame)
 
             y = 20
-            for key, value in data.items():
-                cv.putText(
-                    frame,
-                    f"{key}: {value:.2f}",
-                    (10, y),
-                    cv.FONT_HERSHEY_SIMPLEX,
-                    0.5,
-                    (255, 0, 0),
-                    1,
-                    2,
-                )
-                y += 20
+            if data:
+                for key, value in data.items():
+                    cv.putText(
+                        frame,
+                        f"{key}: {value:.2f}",
+                        (10, y),
+                        cv.FONT_HERSHEY_SIMPLEX,
+                        0.5,
+                        (255, 0, 0),
+                        1,
+                        2,
+                    )
+                    y += 20
 
             cv.imshow("frame", frame)
 

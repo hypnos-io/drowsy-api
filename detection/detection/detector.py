@@ -36,13 +36,13 @@ class DlibDetector(AbstractDetector):
         self._detector = DETECTOR_FHOG
         self._predictor = PREDICTOR_FACE_68
 
-    def _detect_faces(self, source):
-        faces = self._detector(source)
+#     def _detect_faces(self, source):
+#         faces = self._detector(source)
 
-        return faces
+#         return faces
 
-    def _detect_landmarks(self, source, face):
-        landmarks = self._predictor(source, face)
+#     def _detect_landmarks(self, source, face):
+#         landmarks = self._predictor(source, face)
 
         return landmarks
 
