@@ -83,11 +83,9 @@ def calculate_head_lateral(a, b):
     return angle
 
 
-def handle_frame(frame):
-    height, width, *_ = frame.shape
+def calculate_angles(shape, results):
+    height, width, *_ = shape
 
-    results = MediapipeDetector["images"].process(frame)
-    frame.flags.writeable = True
     data = {"head_frontal": 0, "head_lateral": 0}
 
     if results.pose_landmarks:
@@ -105,7 +103,8 @@ def handle_frame(frame):
 
 
 def execute(
-    images,
+    landmarks,
+    shape,
     consec_frames_threshold_frontal=2,
     consec_frames_threshold_lateral=2,
     fps=24,
@@ -133,9 +132,9 @@ def execute(
     frame_data = []
 
     frames = 0
-    for frame in images:
+    for result in landmarks:
         frames += 1
-        data = handle_frame(frame)
+        data = calculate_angles(shape, result)
 
         if data is not None:
             # Head frontal
