@@ -10,7 +10,7 @@ import winsound
 #     return cv.imread(image, v.IMREAD_GRAYSCALE)
 
 def create_frame_list(extension):
-        images = glob.glob(f"C:/Users/callidus/drowsy-api/detection/detection/testing/frames/*.{extension}")
+        images = glob.glob(r"\detection\detection\testing\frames\*." + extension)
         
         frames = [cv.imread(image) for image in images]
         
