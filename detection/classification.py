@@ -1,13 +1,9 @@
-import sys
-sys.path.append(r'drowsiness/')
-
 import numpy as np
 
 from ws.entities import FatigueStatus
 
-from detection.detection.eye_insight_detector import EyeInsightDetector
-from detection.detection.mouth_detector import MouthDlibDetector
-from detection.detection.eye_mediapipe import create_frame_list
+from detection.detection.eye_insight_detector import EyeInsightDetector, create_frame_list
+from detection.detection.mouth_insight_detector import MouthInsightDetector
 from detection.detection.head_detector import HeadDetector
 
 class KSSClassifier:
@@ -65,7 +61,7 @@ class KSSClassifier:
         }
 
 if __name__ == "__main__":
-    frames = create_frame_list('test/tired', "png")
+    frames = create_frame_list()
     mouth_detector = MouthDlibDetector()
     mouth_result = mouth_detector.execute(frames)
     print(mouth_result)
