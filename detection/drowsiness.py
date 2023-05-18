@@ -6,7 +6,7 @@ import numpy as np
 from ws.entities import FatigueStatus
 from detection.handlers import ResizeHandler, CropHandler
 from detection.classification import KSSClassifier
-from detection.detection import detector, eye_insight_detector, mouth_detector, head_detector
+from detection.detection import detector, eye, head, mouth
 
 
 classifier = KSSClassifier(0, 0, 0)
@@ -21,14 +21,14 @@ def detect(video: list[np.ndarray]) -> FatigueStatus:
 
     landmarks = map(insight_face['landmarks'], faces)
 
-    eye_result = eye_insight_detector.execute(landmarks)
-    # mouth_result = mouth_detector.execute(video)
-    # head_result = head_detector.execute(video)
+    eye_result = eye.execute(landmarks)
+    mouth_result = mouth.execute(landmarks)
+    head_result = head.execute(video)
 
     classifier.set_results(
         eye_result,
-        #head_result,                   
-        #mouth_result      
+        head_result,                   
+        mouth_result      
     )
 
     return classifier.status()

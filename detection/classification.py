@@ -1,13 +1,11 @@
-import sys
-
-# from detection.detection.eye_insight_detector import EyeInsightDetector, create_frame_list
-# from detection.detection.mouth_insight_detector import MouthInsightDetector 
-# from detection.detection.head_detector import HeadDetector
-from detection.eye_insight_detector import EyeInsightDetector, create_frame_list
-from detection.mouth_insight_detector import MouthInsightDetector
-from detection.head_detector import HeadDetector
-from detection.detector import initalize_app
 import numpy as np
+
+
+from ws.entities import FatigueStatus
+from detection.detection.eye import EyeInsightDetector, create_frame_list
+from detection.detection.mouth import MouthInsightDetector
+from detection.detection.head import HeadDetector
+from detection.detection.detector import insight_app
 
 
 class KSSClassifier:
@@ -72,7 +70,7 @@ if __name__ == "__main__":
         print("Lista vazia.")
     else:
         print("Running detection...")
-        app = initalize_app()
+        app = insight_app()
         eye = EyeInsightDetector(fps=fps, app=app)
         mouth = MouthInsightDetector(fps=fps, app=app)
         head = HeadDetector(fps=fps)
