@@ -1,0 +1,8 @@
+name: drowsy
+channels:
+  - defaults
+dependencies:
+  - python=3.9
+  - python-socketio
+  - opencv
+prefix: /opt/conda/envs/drowsy

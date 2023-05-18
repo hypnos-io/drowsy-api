@@ -21,28 +21,16 @@ class AbstractDetector(ABC):
     def execute(self, images):
         pass
 
+INSIGHT_FACE = FaceAnalysis(
+    allowed_modules=["detection", "landmark_2d_106"],
+    providers=["CPUExecutionProvider"],
+)
+INSIGHT_FACE.prepare(ctx_id=0, det_size=(640, 640))
 
-class InsightDetector(AbstractDetector):
-    def __init__(self):
-        self.__app = FaceAnalysis(
-            allowed_modules=["detection", "landmark_2d_106"],
-            providers=["CPUExecutionProvider"],
-        )
-        self.__app.prepare(ctx_id=0, det_size=(640, 640))
-
-    def _detect_faces(self, source):
-        faces = self.__app.get(source)
-        return faces
-
-    def _handle_frame(self, frame) -> float:
-        pass
-
-    def _detect_landmarks(self, face):
-        landmarks = face.landmark_2d_106
-        landmarks = np.round(landmarks).astype(int)
-
-        return landmarks
-
+InsightDetector = {
+    'faces': INSIGHT_FACE.get,
+    'landmarks': lambda face: np.round(face.landmark_2d_106).astype(int)
+}
 
 class DlibDetector(AbstractDetector):
     def __init__(self) -> None:
