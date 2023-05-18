@@ -10,7 +10,7 @@ import winsound
 #     return cv.imread(image, v.IMREAD_GRAYSCALE)
 
 def create_frame_list(extension):
-        images = glob.glob(f"C:/Users/callidus/drowsy-api/drowsiness/detection/test/frames/*.{extension}")
+        images = glob.glob(f"C:/Users/callidus/drowsy-api/detection/detection/testing/frames/*.{extension}")
         
         frames = [cv.imread(image) for image in images]
         
@@ -19,12 +19,13 @@ def create_frame_list(extension):
         return frames
 
 class HeadDetector(MediapipeHeadDetector):
-    def __init__(self, fps=10, frontal_threshold=120, lateral_threshold=20, video_lenght=34):
+    def __init__(self, fps=10, frontal_threshold=120, lateral_threshold=20, video_lenght=30):
         super().__init__()
         self.frontal_threshold = frontal_threshold
         self.lateral_threshold = lateral_threshold
         self._video_lenght = video_lenght
         self.frames = []
+        self._down_max = 20
         self._frame_rate = fps
         self._frame_length = 1 / self._frame_rate
         
@@ -173,22 +174,26 @@ class HeadDetector(MediapipeHeadDetector):
                 frame_data.append(data)
 
         frontal_angle_list = np.array([data_frontal["head_frontal"] for data_frontal in frame_data])
-        lateral_angle_list = np.array([data_lateral["head_lateral"] for data_lateral in frame_data])
-        
         frontal_norm = ((frontal_angle_list - np.max(frontal_angle_list)) / (np.min(frontal_angle_list) - np.max(frontal_angle_list) ))
-        lateral_norm = ((lateral_angle_list - np.min(lateral_angle_list)) / (np.max(lateral_angle_list) - np.min(lateral_angle_list)))
 
         detection_data["head_frontal_angle_mean"] = np.mean(frontal_norm)
-        detection_data["head_lateral_angle_mean"] = np.mean(lateral_norm)
-        
 
         detection_data["total_frontal_down_time"] = (
             (frontal_down_count * self._frame_length) / self._video_lenght
         )
+        detection_data["total_frontal_down_count"] /= self._down_max
+
+        
+        lateral_angle_list = np.array([data_lateral["head_lateral"] for data_lateral in frame_data])
+        lateral_norm = ((lateral_angle_list - np.min(lateral_angle_list)) / (np.max(lateral_angle_list) - np.min(lateral_angle_list)))
+
+        detection_data["head_lateral_angle_mean"] = np.mean(lateral_norm)
+
         detection_data["total_lateral_down_time"] = (
             (lateral_down_count * self._frame_length) / self._video_lenght
         )
-        
+        detection_data["total_lateral_down_count"] /= self._down_max
+
         # Result
         final_result_frontal = (
                         detection_data["head_frontal_angle_mean"] * individual_weights["frontal_angle_mean_weight"] +
