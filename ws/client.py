@@ -2,7 +2,7 @@ from typing import TypedDict
 
 import socketio
 
-from . import connection_handlers, encoding
+from ws import connection_handlers, encoding
 from ws.entities import FatigueStatus
 
 
@@ -12,6 +12,8 @@ class DrowsyRequest(TypedDict, total=True):
     workstation: str
     fps: int
     images: list[str]
+
+
 class DrowsyResponse(TypedDict, total=True):
     id: str
     employeeId: str
@@ -20,7 +22,7 @@ class DrowsyResponse(TypedDict, total=True):
     imageStatus: FatigueStatus
 
 
-class SocketManager():
+class SocketManager:
     def __init__(self, client: socketio.Client, detector, url: str) -> None:
         self.client: socketio.AsyncClient = client
         self.detector = detector
@@ -35,22 +37,22 @@ class SocketManager():
         client.on(connection_handlers.connect_error)
         client.on(connection_handlers.disconnect)
 
-        client.connect(url, wait_timeout = 10)
+        client.connect(url, wait_timeout=10)
 
     def _handle_processing(self, client: socketio.Client) -> None:
-        client.on('process-image', self._process)
+        client.on("process-image", self._process)
 
     def _process(self, data: DrowsyRequest) -> DrowsyResponse:
-        images = [encoding.base64_to_ndarray(image) for image in data['images']]
+        images = [encoding.base64_to_ndarray(image) for image in data["images"]]
 
-        imageStatus = self.detector.detect(images)
+        imageStatus = self.detector(images)
 
         response: DrowsyResponse = {
-            "id": data['id'],
-            "employeeId": data['employeeId'],
-            "workstation": data['workstation'],
-            "fps": data['fps'],
-            "imageStatus": imageStatus
+            "id": data["id"],
+            "employeeId": data["employeeId"],
+            "workstation": data["workstation"],
+            "fps": data["fps"],
+            "imageStatus": imageStatus,
         }
 
-        self.client.emit('notify-status', response)
+        self.client.emit("notify-status", response)
