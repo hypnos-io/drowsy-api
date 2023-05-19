@@ -2,7 +2,7 @@ from typing import TypedDict
 
 import socketio
 
-from . import connection_handlers, encoding
+from ws import connection_handlers, encoding
 from ws.entities import FatigueStatus
 
 
