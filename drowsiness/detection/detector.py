@@ -17,7 +17,7 @@ INSIGHT_FACE = insight_app()
 
 InsightDetector = {
     "faces": INSIGHT_FACE.get,
-    "landmarks": lambda face: np.round(face.landmark_2d_106).astype(int),
+    "landmarks": lambda faces: np.round(faces[0].landmark_2d_106).astype(int),
 }
 
 
