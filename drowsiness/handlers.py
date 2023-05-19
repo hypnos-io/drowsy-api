@@ -11,11 +11,18 @@ import numpy as np
 point = tuple[int, int]
 dimension = point
 
+
 class ImageHandler(ABC):
     """Abstract Handler class implementing the Chain-of-responsability pattern"""
 
-    def __init__(self, next_handler: Optional["ImageHandler"] = None, *handler_chain: list["ImageHandler"]):
-        self._next = next_handler if not callable(next_handler) else next_handler(*handler_chain)
+    def __init__(
+        self,
+        next_handler: Optional["ImageHandler"] = None,
+        *handler_chain: list["ImageHandler"]
+    ):
+        self._next = (
+            next_handler if not callable(next_handler) else next_handler(*handler_chain)
+        )
 
     @abstractmethod
     def _handle(self, image: np.ndarray) -> None:
@@ -41,7 +48,7 @@ class CropHandler(ImageHandler):
     def _handle(self, image: np.ndarray, crop_bbox: tuple[point, point]) -> None:
         start, end = crop_bbox
 
-        image = image[start[0]:start[1], end[0]:end[1]]
+        image = image[start[0] : start[1], end[0] : end[1]]
 
 
 class ResizeHandler(ImageHandler):

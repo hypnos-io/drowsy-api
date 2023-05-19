@@ -1,9 +1,9 @@
 import glob
-from time import time
 
-from detection.detector import DetectionData, MediapipeDetector
-import cv2 as cv
 import numpy as np
+import cv2 as cv
+
+from drowsiness.detection.detector import DetectionData, MediapipeDetector
 
 RIGHT_EAR = MediapipeDetector["pose"].PoseLandmark.RIGHT_EAR
 LEFT_EAR = MediapipeDetector["pose"].PoseLandmark.LEFT_EAR

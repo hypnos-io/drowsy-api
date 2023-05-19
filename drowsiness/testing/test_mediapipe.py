@@ -1,6 +1,6 @@
 import time
 
-from detection.detection.head import HeadDetector, create_frame_list
+from drowsiness.detection.head import HeadDetector, create_frame_list
 
 head = HeadDetector()
 

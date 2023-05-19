@@ -1,5 +1,6 @@
 from typing import TypedDict
 
+
 class FatigueDetectionInfo(TypedDict, total=True):
     eyes: dict
     head: dict
