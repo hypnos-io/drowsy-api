@@ -2,6 +2,8 @@ import glob
 
 import numpy as np
 import cv2 as cv
+from drowsiness.classification import KSSClassifier
+from eye import create_frame_list
 
 from drowsiness.detection.detector import DetectionData, MediapipeDetector
 
@@ -225,4 +227,19 @@ def execute(
 
 
 if __name__ == "__main__":
-    print("")
+
+
+    
+    classifier = KSSClassifier(0, 0, 0)
+
+    video = create_frame_list()
+    mp_results = []
+
+    for frame in video:
+        mp_results.append(MediapipeDetector['images'].process(frame))
+
+    head_result = execute(mp_results, video[0].shape)
+
+    classifier.set_results(None, head_result, None)
+
+    print(classifier.status())
