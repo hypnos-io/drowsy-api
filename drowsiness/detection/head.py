@@ -1,15 +1,17 @@
 import glob
+import sys
+sys.path.append(r'drowsiness')
 
 import numpy as np
 import cv2 as cv
-from drowsiness.classification import KSSClassifier
-from eye import create_frame_list
+from classification import KSSClassifier
 
-from drowsiness.detection.detector import DetectionData, MediapipeDetector
+from detector import DetectionData, MediapipeDetector
 
 RIGHT_EAR = MediapipeDetector["pose"].PoseLandmark.RIGHT_EAR
 LEFT_EAR = MediapipeDetector["pose"].PoseLandmark.LEFT_EAR
 NOSE = MediapipeDetector["pose"].PoseLandmark.NOSE
+
 
 WEIGHTS = {
     "frontal_angle_mean_weight": 0.2,
@@ -22,17 +24,26 @@ WEIGHTS = {
     "lateral_weight": 0.2,
 }
 
+def create_frame_list():
+    images = glob.glob(r"drowsiness\testing\frames\*.png")
 
-def create_frame_list(extension):
-    images = glob.glob(
-        f"C:/Users/callidus/drowsy-api/detection/detection/testing/frames/*.{extension}"
-    )
-
+    # Apply image processing techniques
     frames = [cv.imread(image) for image in images]
+    frames = [
+        cv.resize(frame, (640, 360)) for frame in frames
+    ]  # resize images to a standard size
+    frames = [cv.cvtColor(frame, cv.COLOR_RGB2BGR) for frame in frames]
 
-    frames = [cv.cvtColor(frame, cv.COLOR_BGR2RGB) for frame in frames]
+    # Apply camera calibration
+    camera_matrix = np.array(
+        [[1000, 0, 320], [0, 1000, 180], [0, 0, 1]]
+    )  # example camera matrix
+
+    distortion_coeffs = np.array([0.1, -0.05, 0, 0])  # example distortion coefficients
+    frames = [cv.undistort(frame, camera_matrix, distortion_coeffs) for frame in frames]
 
     return frames
+
 
 
 def get_head(results, height, width):
@@ -225,12 +236,9 @@ def execute(
 
     return DetectionData(round(result, 1), detection_data)
 
-
 if __name__ == "__main__":
-
-
-    
     classifier = KSSClassifier(0, 0, 0)
+    
 
     video = create_frame_list()
     mp_results = []
@@ -241,5 +249,5 @@ if __name__ == "__main__":
     head_result = execute(mp_results, video[0].shape)
 
     classifier.set_results(None, head_result, None)
-
-    print(classifier.status())
+    print("------- RESULTADOS: ")
+    print(head_result.result)
