@@ -73,9 +73,9 @@ def execute(
     frame_length = 1 / fps
 
     detection_data = {
-        "eye_opening": None,
-        "blink_count": None,
-        "closed_eyes_time": None,
+        "eye_opening": 0,
+        "blink_count": 0,
+        "closed_eyes_time": 0,
     }
 
     ear_list = []
@@ -98,14 +98,14 @@ def execute(
         )
 
     ear_array = np.array(ear_list)
-    ear_array = ear_array[~np.isna(ear_array)]
+    ear_array = ear_array[~np.isnan(ear_array)]
     ear_min = np.min(ear_array)
     ear_max = np.max(ear_array)
     ear_norm = abs(ear_array - ear_max) / abs(ear_min - ear_max)
     average = np.mean(ear_norm)
     video_length = len(ear_norm) / 10
 
-    detection_data["eye_opening"] = average_ear
+    detection_data["eye_opening"] = average
     detection_data["closed_eyes_time"] = (
         detection_data["closed_eyes_time"] * frame_length
     ) / video_length

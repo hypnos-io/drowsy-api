@@ -24,6 +24,9 @@ def inner_lip_area(landmarks):
 
 
 def execute(landmarks, fps=24, video_length=30, yawn_area=300, yawn_duration=4):
+    if landmarks is None:
+        print("Lista vazia.")
+        return
     frame_length = 1 / fps
 
     detection_data = {"yawn_count": 0, "yawn_frame_count": 0}

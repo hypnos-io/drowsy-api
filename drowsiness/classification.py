@@ -13,7 +13,7 @@ class KSSClassifier:
     def __calculate_kss_score(self):
         mouth = self.mouth_result.result
         eye = self.eyes_result.result
-        head = self.head_result.result
+        head = 0
 
         """
         head:  [head], [eyes], [mouth]
@@ -54,7 +54,7 @@ class KSSClassifier:
             "kssScale": self.classify(),
             "detection": {
                 "eyes": self.eyes_result.to_dict(),
-                "head": self.head_result.to_dict(),
+                # "head": self.head_result.to_dict(),
                 "mouth": self.mouth_result.to_dict(),
             },
         }

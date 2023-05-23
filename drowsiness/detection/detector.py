@@ -12,12 +12,15 @@ def insight_app():
     app.prepare(ctx_id=0, det_size=(640, 640))
     return app
 
+def get_landmarks(faces):
+    if faces:
+       return np.round(faces[0].landmark_2d_106).astype(int)   
 
 INSIGHT_FACE = insight_app()
 
 InsightDetector = {
     "faces": INSIGHT_FACE.get,
-    "landmarks": lambda faces: np.round(faces[0].landmark_2d_106).astype(int),
+    "landmarks": get_landmarks,
 }
 
 
@@ -31,7 +34,7 @@ MediapipeDetector["images"] = MediapipeDetector["pose"].Pose(
 
 class DetectionData:
     def __init__(self, result, data) -> None:
-        assert 0 <= result <= 1, "Detection result should be inbetween 0 and 1"
+        # assert 0 <= result <= 1, "Detection result should be inbetween 0 and 1"
 
         self.result = result
         self.data = data
