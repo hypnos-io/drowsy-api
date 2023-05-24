@@ -5,6 +5,7 @@ import numpy as np
 import cv2 as cv
 
 from drowsiness.detection.detector import DetectionData
+#from detector import DetectionData
 
 
 def create_frame_list():
@@ -66,7 +67,7 @@ def average_ear(landmarks):
 
 def execute(
     landmarks, ear_threshold=0.17, closed_eyes_threshold=3, fps=24, video_length=30
-) -> DetectionData:
+):
     if landmarks is None:
         print("Lista vazia.")
         return
