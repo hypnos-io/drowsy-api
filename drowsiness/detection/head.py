@@ -5,9 +5,9 @@ sys.path.append(r'drowsiness')
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2 as cv
-from classification import KSSClassifier
+#from classification import KSSClassifier
 
-from detector import DetectionData, MediapipeDetector
+from drowsiness.detection.detector import DetectionData, MediapipeDetector
 
 RIGHT_EAR = MediapipeDetector["pose"].PoseLandmark.RIGHT_EAR
 LEFT_EAR = MediapipeDetector["pose"].PoseLandmark.LEFT_EAR
@@ -237,52 +237,52 @@ def execute(
 
 
 if __name__ == "__main__":
+    print("teste")
+    # # Open the video file
+    # cap = cv.VideoCapture(r'drowsiness\testing\tired_0.mp4')
+    # fps = cap.get(cv.CAP_PROP_FPS)
+    # interval = int(round(fps / 10))
+    # count = 0
+    # frame_number = 0
+    # prefix = ''
 
-    # Open the video file
-    cap = cv.VideoCapture(r'drowsiness\testing\tired_0.mp4')
-    fps = cap.get(cv.CAP_PROP_FPS)
-    interval = int(round(fps / 10))
-    count = 0
-    frame_number = 0
-    prefix = ''
-
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if ret:
-            if count % interval == 0:
-                frame_number += 1
-                if frame_number < 10:
-                    cv.imwrite(r'drowsiness\testing\frames\frame_00%d.png' % frame_number, frame)
-                elif 10 <= frame_number < 100:
-                    cv.imwrite(r'drowsiness\testing\frames\frame_0%d.png' % frame_number, frame)
-                else:
-                    cv.imwrite(r'drowsiness\testing\frames\frame_%d.png' % frame_number, frame)
+    # while cap.isOpened():
+    #     ret, frame = cap.read()
+    #     if ret:
+    #         if count % interval == 0:
+    #             frame_number += 1
+    #             if frame_number < 10:
+    #                 cv.imwrite(r'drowsiness\testing\frames\frame_00%d.png' % frame_number, frame)
+    #             elif 10 <= frame_number < 100:
+    #                 cv.imwrite(r'drowsiness\testing\frames\frame_0%d.png' % frame_number, frame)
+    #             else:
+    #                 cv.imwrite(r'drowsiness\testing\frames\frame_%d.png' % frame_number, frame)
                 
-            count += 1
-        else:
-            break
+    #         count += 1
+    #     else:
+    #         break
 
-    cap.release()
-    classifier = KSSClassifier(0, 0, 0)
+    # cap.release()
+    # classifier = KSSClassifier(0, 0, 0)
     
 
-    video = create_frame_list()
-    mp_results = []
+    # video = create_frame_list()
+    # mp_results = []
 
-    for frame in video:
-        mp_results.append(MediapipeDetector['images'].process(frame))
+    # for frame in video:
+    #     mp_results.append(MediapipeDetector['images'].process(frame))
 
-    head_result = execute(mp_results, video[0].shape)
+    # head_result = execute(mp_results, video[0].shape)
 
-    classifier.set_results(None, head_result, None)
+    # classifier.set_results(None, head_result, None)
 
-    metrics = list(head_result.data.keys())
-    values = list(head_result.data.values())
+    # metrics = list(head_result.data.keys())
+    # values = list(head_result.data.values())
 
-    fig = plt.figure(figsize = (13, 8))
-    plt.bar(metrics, values, color='g', width = 0.4)
-    plt.xlabel("Metrics", fontsize=10)
-    plt.xticks(rotation=15, ha='right')
-    plt.ylabel("Values")
-    plt.title(f"Result {head_result.result}")
-    plt.show()
+    # fig = plt.figure(figsize = (13, 8))
+    # plt.bar(metrics, values, color='g', width = 0.4)
+    # plt.xlabel("Metrics", fontsize=10)
+    # plt.xticks(rotation=15, ha='right')
+    # plt.ylabel("Values")
+    # plt.title(f"Result {head_result.result}")
+    # plt.show()

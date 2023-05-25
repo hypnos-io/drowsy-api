@@ -18,6 +18,7 @@ mediapipe = detector.MediapipeDetector
 
 
 def detect(video: list[np.ndarray]) -> FatigueStatus:
+    print("detecting")
     mp_results = None
     with ThreadPoolExecutor() as executor:
         faces = executor.map(insight_face["faces"], video)

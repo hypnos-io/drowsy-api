@@ -1,7 +1,7 @@
 import numpy as np
 
 
-# from ws.entities import FatigueStatus
+from ws.entities import FatigueStatus
 
 
 

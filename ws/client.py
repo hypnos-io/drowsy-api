@@ -44,8 +44,10 @@ class SocketManager:
 
     def _process(self, data: DrowsyRequest) -> DrowsyResponse:
         images = [encoding.base64_to_ndarray(image) for image in data["images"]]
-
+        print('Recebendo imagens')
         imageStatus = self.detector(images)
+        print("status:")
+        print(imageStatus)
 
         response: DrowsyResponse = {
             "id": data["id"],
@@ -54,5 +56,6 @@ class SocketManager:
             "fps": data["fps"],
             "imageStatus": imageStatus,
         }
+        print(response)
 
         self.client.emit("notify-status", response)
