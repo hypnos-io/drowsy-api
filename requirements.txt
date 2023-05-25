@@ -1,4 +1,4 @@
 # onnxruntime-gpu
 insightface
 mediapipe
-python-socketio[client]
+python-socketio[asyncio_client]

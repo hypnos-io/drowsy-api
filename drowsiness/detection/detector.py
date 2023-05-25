@@ -38,7 +38,8 @@ class DetectionData:
 
     def to_dict(self):
         return {"result": self.result, **self.data}
-    
+
+
 MediapipeDetector = {
     "pose": mp.solutions.pose,
 }
@@ -63,7 +64,3 @@ MediapipeDetector["images"] = MediapipeDetector["pose"].Pose(
 #     "faces": INSIGHT_FACE.get,
 #     "landmarks": lambda face: np.round(face.landmark_2d_106).astype(int),
 # }
-
-
-
-
