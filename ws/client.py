@@ -24,7 +24,7 @@ class DrowsyResponse(TypedDict, total=True):
 
 class SocketManager:
     def __init__(self, client: socketio.Client, detector, url: str) -> None:
-        self.client: socketio.AsyncClient = client
+        self.client: socketio.Client = client
         self.detector = detector
 
         self._handle_connection(self.client, url)
@@ -46,14 +46,16 @@ class SocketManager:
         id = data["id"]
         images = [encoding.base64_to_ndarray(image) for image in data["images"]]
 
-        imageStatus = self.detector(id, images)
 
+        self.detector(id, images, self.send_response, data)
+
+    def send_response(self, status: FatigueStatus, data: DrowsyRequest) -> None:
         response: DrowsyResponse = {
             "id": data["id"],
             "employeeId": data["employeeId"],
             "workstation": data["workstation"],
             "fps": data["fps"],
-            "imageStatus": imageStatus,
+            "imageStatus": status,
         }
 
         self.client.emit("notify-status", response)
