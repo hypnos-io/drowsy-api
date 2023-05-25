@@ -1,7 +1,8 @@
 import numpy as np
 
 
-from ws.entities import FatigueStatus
+# from ws.entities import FatigueStatus
+
 
 
 class KSSClassifier:
@@ -49,7 +50,7 @@ class KSSClassifier:
         if mouth_result:
             self.mouth_result = mouth_result
 
-    def status(self) -> FatigueStatus:
+    def status(self):
         return {
             "kssScale": self.classify(),
             "detection": {
@@ -58,3 +59,6 @@ class KSSClassifier:
                 "mouth": self.mouth_result.to_dict(),
             },
         }
+    
+
+

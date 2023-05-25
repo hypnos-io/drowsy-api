@@ -8,7 +8,7 @@ from drowsiness.detection.detector import DetectionData
 
 
 def create_frame_list():
-    images = glob.glob(r"drowsy-api\detection\testing\frames\test\*.png")
+    images = glob.glob(r"drowsiness\testing\frames\*.png")
 
     # Apply image processing techniques
     frames = [cv.imread(image) for image in images]

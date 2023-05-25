@@ -1,36 +1,52 @@
 import glob
+import sys
+sys.path.append(r'drowsiness')
 
 import numpy as np
+import matplotlib.pyplot as plt
 import cv2 as cv
+from classification import KSSClassifier
 
-from drowsiness.detection.detector import DetectionData, MediapipeDetector
+from detector import DetectionData, MediapipeDetector
 
 RIGHT_EAR = MediapipeDetector["pose"].PoseLandmark.RIGHT_EAR
 LEFT_EAR = MediapipeDetector["pose"].PoseLandmark.LEFT_EAR
 NOSE = MediapipeDetector["pose"].PoseLandmark.NOSE
 
+
 WEIGHTS = {
-    "frontal_angle_mean_weight": 0.2,
-    "frontal_down_time_weight": 0.8,
-    "lateral_angle_mean_weight": 0.8,
-    "lateral_down_time_weight": 0.2,
-    "frontal_down_count_weight": 0.5,
-    "lateral_down_count_weight": 0.5,
+    "frontal_angle_mean_weight": 0.5,
+    "frontal_down_time_weight": 0.5,
+    "frontal_down_count_weight": 0.8,
+
+    "lateral_angle_mean_weight": 0.6,
+    "lateral_down_time_weight": 0.6,
+    "lateral_down_count_weight": 0.8,
+
     "frontal_weight": 0.8,
-    "lateral_weight": 0.2,
+    "lateral_weight": 0.8,
 }
 
+def create_frame_list():
+    images = glob.glob(r"drowsiness\testing\frames\*.png")
 
-def create_frame_list(extension):
-    images = glob.glob(
-        f"C:/Users/callidus/drowsy-api/detection/detection/testing/frames/*.{extension}"
-    )
-
+    # Apply image processing techniques
     frames = [cv.imread(image) for image in images]
+    frames = [
+        cv.resize(frame, (640, 360)) for frame in frames
+    ]  # resize images to a standard size
+    frames = [cv.cvtColor(frame, cv.COLOR_RGB2BGR) for frame in frames]
 
-    frames = [cv.cvtColor(frame, cv.COLOR_BGR2RGB) for frame in frames]
+    # Apply camera calibration
+    camera_matrix = np.array(
+        [[1000, 0, 320], [0, 1000, 180], [0, 0, 1]]
+    )  # example camera matrix
+
+    distortion_coeffs = np.array([0.1, -0.05, 0, 0])  # example distortion coefficients
+    frames = [cv.undistort(frame, camera_matrix, distortion_coeffs) for frame in frames]
 
     return frames
+
 
 
 def get_head(results, height, width):
@@ -105,8 +121,8 @@ def calculate_angles(shape, results):
 def execute(
     landmarks,
     shape,
-    consec_frames_threshold_frontal=2,
-    consec_frames_threshold_lateral=2,
+    consec_frames_threshold_frontal=0,
+    consec_frames_threshold_lateral=0,
     fps=24,
     frontal_threshold=120,
     lateral_threshold=20,
@@ -117,9 +133,9 @@ def execute(
     detection_data = {
         "total_frontal_down_time": 0,
         "head_frontal_angle_mean": 0,
+        "total_frontal_down_count": 0,
         "total_lateral_down_time": 0,
         "head_lateral_angle_mean": 0,
-        "total_frontal_down_count": 0,
         "total_lateral_down_count": 0,
     }
 
@@ -175,7 +191,7 @@ def execute(
         [data_frontal["head_frontal"] for data_frontal in frame_data]
     )
     frontal_norm = (frontal_angle_list - np.max(frontal_angle_list)) / (
-        np.min(frontal_angle_list) - np.max(frontal_angle_list)
+        60 - np.max(frontal_angle_list)
     )
 
     detection_data["head_frontal_angle_mean"] = np.mean(frontal_norm)
@@ -183,7 +199,8 @@ def execute(
     detection_data["total_frontal_down_time"] = (
         frontal_down_count * frame_length
     ) / video_length
-    detection_data["total_frontal_down_count"] /= 20  # Down max
+    detection_data["total_frontal_down_count"] /= 12  # Down max
+
 
     lateral_angle_list = np.array(
         [data_lateral["head_lateral"] for data_lateral in frame_data]
@@ -197,32 +214,75 @@ def execute(
     detection_data["total_lateral_down_time"] = (
         lateral_down_count * frame_length
     ) / video_length
-    detection_data["total_lateral_down_count"] /= 20  # Down max
+    detection_data["total_lateral_down_count"] /= 12  # Down max
 
     # Result
     final_result_frontal = (
         detection_data["head_frontal_angle_mean"] * WEIGHTS["frontal_angle_mean_weight"]
-        + detection_data["total_frontal_down_time"]
-        * WEIGHTS["frontal_down_time_weight"]
-        + detection_data["total_frontal_down_count"]
-        * WEIGHTS["frontal_down_count_weight"]
+        + detection_data["total_frontal_down_time"] * WEIGHTS["frontal_down_time_weight"]
+        + detection_data["total_frontal_down_count"] * WEIGHTS["frontal_down_count_weight"]
     )
 
     final_result_lateral = (
         detection_data["head_lateral_angle_mean"] * WEIGHTS["lateral_angle_mean_weight"]
-        + detection_data["total_lateral_down_time"]
-        * WEIGHTS["lateral_down_time_weight"]
-        + detection_data["total_lateral_down_count"]
-        * WEIGHTS["lateral_down_count_weight"]
+        + detection_data["total_lateral_down_time"] * WEIGHTS["lateral_down_time_weight"]
+        + detection_data["total_lateral_down_count"] * WEIGHTS["lateral_down_count_weight"]
     )
 
     result = (
-        (final_result_frontal * WEIGHTS["frontal_weight"])
-        + final_result_lateral * WEIGHTS["lateral_weight"]
+        final_result_frontal * WEIGHTS["frontal_weight"] + final_result_lateral * WEIGHTS["lateral_weight"]
     ) / 2
 
     return DetectionData(round(result, 1), detection_data)
 
 
 if __name__ == "__main__":
-    print("")
+
+    # Open the video file
+    cap = cv.VideoCapture(r'drowsiness\testing\tired_0.mp4')
+    fps = cap.get(cv.CAP_PROP_FPS)
+    interval = int(round(fps / 10))
+    count = 0
+    frame_number = 0
+    prefix = ''
+
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if ret:
+            if count % interval == 0:
+                frame_number += 1
+                if frame_number < 10:
+                    cv.imwrite(r'drowsiness\testing\frames\frame_00%d.png' % frame_number, frame)
+                elif 10 <= frame_number < 100:
+                    cv.imwrite(r'drowsiness\testing\frames\frame_0%d.png' % frame_number, frame)
+                else:
+                    cv.imwrite(r'drowsiness\testing\frames\frame_%d.png' % frame_number, frame)
+                
+            count += 1
+        else:
+            break
+
+    cap.release()
+    classifier = KSSClassifier(0, 0, 0)
+    
+
+    video = create_frame_list()
+    mp_results = []
+
+    for frame in video:
+        mp_results.append(MediapipeDetector['images'].process(frame))
+
+    head_result = execute(mp_results, video[0].shape)
+
+    classifier.set_results(None, head_result, None)
+
+    metrics = list(head_result.data.keys())
+    values = list(head_result.data.values())
+
+    fig = plt.figure(figsize = (13, 8))
+    plt.bar(metrics, values, color='g', width = 0.4)
+    plt.xlabel("Metrics", fontsize=10)
+    plt.xticks(rotation=15, ha='right')
+    plt.ylabel("Values")
+    plt.title(f"Result {head_result.result}")
+    plt.show()
