@@ -1,8 +1,8 @@
-import cv2
+import cv2 as cv
 
 # Open the video file
-cap = cv2.VideoCapture(r'drowsiness\testing\frames\test_tired_2.mp4')
-fps = cap.get(cv2.CAP_PROP_FPS)
+cap = cv.VideoCapture(r'drowsiness\testing\tired_0.mp4')
+fps = cap.get(cv.CAP_PROP_FPS)
 interval = int(round(fps / 10))
 count = 0
 frame_number = 0
@@ -14,11 +14,11 @@ while cap.isOpened():
         if count % interval == 0:
             frame_number += 1
             if frame_number < 10:
-                cv2.imwrite(r'drowsiness\testing\frames\frame_00%d.png' % frame_number, frame)
+                cv.imwrite(r'drowsiness\testing\frames\frame_00%d.png' % frame_number, frame)
             elif 10 <= frame_number < 100:
-                cv2.imwrite(r'drowsiness\testing\frames\frame_0%d.png' % frame_number, frame)
+                cv.imwrite(r'drowsiness\testing\frames\frame_0%d.png' % frame_number, frame)
             else:
-                cv2.imwrite(r'drowsiness\testing\frames\frame_%d.png' % frame_number, frame)
+                cv.imwrite(r'drowsiness\testing\frames\frame_%d.png' % frame_number, frame)
             
         count += 1
     else:
