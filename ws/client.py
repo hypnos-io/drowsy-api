@@ -43,9 +43,10 @@ class SocketManager:
         client.on("process-image", self._process)
 
     def _process(self, data: DrowsyRequest) -> DrowsyResponse:
+        id = data["id"]
         images = [encoding.base64_to_ndarray(image) for image in data["images"]]
 
-        imageStatus = self.detector(images)
+        imageStatus = self.detector(id, images)
 
         response: DrowsyResponse = {
             "id": data["id"],

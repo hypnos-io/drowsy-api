@@ -1,6 +1,5 @@
 import numpy as np
 import mediapipe as mp
-<<<<<<< HEAD
 import insightface
 from insightface.app import FaceAnalysis
 
@@ -29,9 +28,6 @@ MediapipeDetector["images"] = MediapipeDetector["pose"].Pose(
     min_detection_confidence=0.5, min_tracking_confidence=0.5
 )
 
-=======
-# from insightface.app import FaceAnalysis
->>>>>>> environment
 
 class DetectionData:
     def __init__(self, result, data) -> None:
@@ -42,7 +38,8 @@ class DetectionData:
 
     def to_dict(self):
         return {"result": self.result, **self.data}
-    
+
+
 MediapipeDetector = {
     "pose": mp.solutions.pose,
 }
@@ -67,7 +64,3 @@ MediapipeDetector["images"] = MediapipeDetector["pose"].Pose(
 #     "faces": INSIGHT_FACE.get,
 #     "landmarks": lambda face: np.round(face.landmark_2d_106).astype(int),
 # }
-
-
-
-
