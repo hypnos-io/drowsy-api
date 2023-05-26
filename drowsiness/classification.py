@@ -22,7 +22,7 @@ class KSSClassifier:
         eyes:  [head], [eyes], [mouth]
         mouth: [head], [eyes], [mouth]
         """
-        comparison_matrix = np.array([[1, 1 / 3, 5], [3, 1, 3], [1 / 5, 1 / 3, 1]])
+        comparison_matrix = np.array([[1, 1 / 3, 1/5], [3, 1, 4], [5, 1 / 4, 1]])
 
         priority_vector = np.sum(comparison_matrix, axis=1) / np.sum(comparison_matrix)
 

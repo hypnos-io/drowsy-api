@@ -14,10 +14,10 @@ classifier = KSSClassifier(0, 0, 0)
 handlers = CropHandler(ResizeHandler)
 
 # Images per second per camera
-FRAME_RATE = 5
+FRAME_RATE = 10
 
 # How many landmarks to process through the *.execute calls
-BATCH_SIZE = 5  # 30 times the amount of images in a second = 30 seconds
+BATCH_SIZE = 20  # 30 times the amount of images in a second = 30 seconds
 insight_face = detector.InsightDetector
 mediapipe = detector.MediapipeDetector
 

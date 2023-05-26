@@ -66,7 +66,7 @@ def average_ear(landmarks):
 
 
 def execute(
-    landmarks, ear_threshold=0.17, closed_eyes_threshold=3, fps=24, video_length=30
+    landmarks, ear_threshold=0.17, closed_eyes_threshold=3, fps=10
 ) -> DetectionData:
     if landmarks is None:
         print("Lista vazia.")
@@ -89,6 +89,7 @@ def execute(
                 close_frames += 1
                 detection_data["closed_eyes_time"] += 1
             else:
+                print("close frames: ", close_frames)
                 if 1 <= close_frames < closed_eyes_threshold:
                     detection_data["blink_count"] += 1
                 close_frames = 0
@@ -104,7 +105,8 @@ def execute(
     ear_max = np.max(ear_array)
     ear_norm = abs(ear_array - ear_max) / abs(ear_min - ear_max)
     average = np.mean(ear_norm)
-    video_length = len(ear_norm) / 10
+    video_length = len(ear_norm) * frame_length
+    print("video: ", video_length)
 
     detection_data["eye_opening"] = average
     detection_data["closed_eyes_time"] = (

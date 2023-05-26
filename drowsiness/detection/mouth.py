@@ -23,7 +23,7 @@ def inner_lip_area(landmarks):
     return area
 
 
-def execute(landmarks, fps=24, video_length=30, yawn_area=100, yawn_duration=2):
+def execute(landmarks, fps=10, yawn_area=100, yawn_duration=2):
     if landmarks is None:
         print("Lista vazia.")
         return
@@ -41,17 +41,20 @@ def execute(landmarks, fps=24, video_length=30, yawn_area=100, yawn_duration=2):
         inner_area = inner_lip_area(landmark)
 
         if inner_area > yawn_area:
-            print("bocejo")
             yawn_frames += 1
+            detection_data["yawn_frame_count"] += 1
         else:
             if yawn_frames > yawn_duration:
+                print("bocejou")
                 detection_data["yawn_count"] += 1
-                detection_data["yawn_frame_count"] += yawn_frames
             yawn_frames = 0
 
         area_array.append(inner_area)
+        
+    video_length = frame_length * len_ldmrk
+    print("mouth video: ", video_length)
 
-    detection_data["yawn_count"] /= 10  # max_num_yawn
+    detection_data["yawn_count"] /= 5  # max_num_yawn
     detection_data["yawn_percentage"] = detection_data["yawn_frame_count"] / len_ldmrk
     detection_data["yawn_time"] = (
         detection_data["yawn_frame_count"] * frame_length
@@ -62,7 +65,7 @@ def execute(landmarks, fps=24, video_length=30, yawn_area=100, yawn_duration=2):
         + (detection_data["yawn_percentage"] * WEIGHTS["yawn_percentage_weight"])
         + (detection_data["yawn_time"] * WEIGHTS["yawn_time_weight"])
     )
-
+    
     return DetectionData(round(result, 1), detection_data)
 
 
