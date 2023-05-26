@@ -52,6 +52,7 @@ def calculate_ear(eye):
 
 
 def average_ear(landmarks):
+    
     if landmarks is None:
         return None
     left_eye = np.array(landmarks[LEFT_EYE])
@@ -73,9 +74,9 @@ def execute(
     frame_length = 1 / fps
 
     detection_data = {
-        "eye_opening": None,
-        "blink_count": None,
-        "closed_eyes_time": None,
+        "eye_opening": 0.0,
+        "blink_count": 0.0,
+        "closed_eyes_time": 0.0,
     }
 
     ear_list = []

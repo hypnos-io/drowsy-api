@@ -129,7 +129,7 @@ def execute(
     video_length=30,
 ):
     frame_length = 1 / fps
-
+    print(landmarks)
     detection_data = {
         "total_frontal_down_time": 0,
         "head_frontal_angle_mean": 0,
@@ -153,6 +153,7 @@ def execute(
         data = calculate_angles(shape, result)
 
         if data is not None:
+            frame_data.append(data)
             # Head frontal
             if data["head_frontal"] < frontal_threshold:
                 frontal_down_consecutives += 1
@@ -161,9 +162,6 @@ def execute(
                     detection_data["total_frontal_down_count"] += 1
 
                 if frontal_down_consecutives > consec_frames_threshold_frontal:
-                    print(
-                        f"\033[31m Frontal :{frames}\033[0m | Angle: {data['head_frontal']}"
-                    )
                     frontal_down_count += 1
 
             else:
@@ -177,16 +175,13 @@ def execute(
                     detection_data["total_lateral_down_count"] += 1
 
                 if lateral_down_consecutives > consec_frames_threshold_lateral:
-                    print(
-                        f"\033[32m Lateral :{frames}\033[0m | Angle: {data['head_lateral']}"
-                    )
                     lateral_down_count += 1
 
             else:
                 lateral_down_consecutives = 0
-
-            frame_data.append(data)
-
+    
+    print(type(frame_data))
+    print("frame_data: ", frame_data)
     frontal_angle_list = np.array(
         [data_frontal["head_frontal"] for data_frontal in frame_data]
     )
@@ -199,7 +194,7 @@ def execute(
     detection_data["total_frontal_down_time"] = (
         frontal_down_count * frame_length
     ) / video_length
-    detection_data["total_frontal_down_count"] /= 12  # Down max
+    detection_data["total_frontal_down_count"] /= 6  # Down max
 
     lateral_angle_list = np.array(
         [data_lateral["head_lateral"] for data_lateral in frame_data]
@@ -213,29 +208,26 @@ def execute(
     detection_data["total_lateral_down_time"] = (
         lateral_down_count * frame_length
     ) / video_length
-    detection_data["total_lateral_down_count"] /= 12  # Down max
-
+    detection_data["total_lateral_down_count"] /= 6  # Down max
+    print("detection_data: ", detection_data)
     # Result
     final_result_frontal = (
         detection_data["head_frontal_angle_mean"] * WEIGHTS["frontal_angle_mean_weight"]
-        + detection_data["total_frontal_down_time"]
-        * WEIGHTS["frontal_down_time_weight"]
-        + detection_data["total_frontal_down_count"]
-        * WEIGHTS["frontal_down_count_weight"]
+        + detection_data["total_frontal_down_time"] * WEIGHTS["frontal_down_time_weight"]
+        + detection_data["total_frontal_down_count"] * WEIGHTS["frontal_down_count_weight"]
     )
 
     final_result_lateral = (
         detection_data["head_lateral_angle_mean"] * WEIGHTS["lateral_angle_mean_weight"]
-        + detection_data["total_lateral_down_time"]
-        * WEIGHTS["lateral_down_time_weight"]
-        + detection_data["total_lateral_down_count"]
-        * WEIGHTS["lateral_down_count_weight"]
+        + detection_data["total_lateral_down_time"] * WEIGHTS["lateral_down_time_weight"]
+        + detection_data["total_lateral_down_count"] * WEIGHTS["lateral_down_count_weight"]
     )
 
     result = (
         final_result_frontal * WEIGHTS["frontal_weight"]
         + final_result_lateral * WEIGHTS["lateral_weight"]
     ) / 2
+    
 
     return DetectionData(round(result, 1), detection_data)
 

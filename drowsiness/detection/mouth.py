@@ -17,20 +17,25 @@ WEIGHTS = {
 
 def inner_lip_area(landmarks):
     inner_lip = np.array(landmarks[INNER_LIP])
-
     area = cv.contourArea(inner_lip)
 
     return area
 
 
 def execute(landmarks, fps=24, video_length=30, yawn_area=300, yawn_duration=4):
+    if landmarks is None:
+        print("Lista vazia.")
+        return
     frame_length = 1 / fps
-
     detection_data = {"yawn_count": 0, "yawn_frame_count": 0}
 
     area_array = []
     yawn_frames = 0
+    len_ldmrk = 0
     for landmark in landmarks:
+        len_ldmrk += 1
+        if landmark is None:
+            continue
         inner_area = inner_lip_area(landmark)
 
         if inner_area > yawn_area:
@@ -44,9 +49,7 @@ def execute(landmarks, fps=24, video_length=30, yawn_area=300, yawn_duration=4):
         area_array.append(inner_area)
 
     detection_data["yawn_count"] /= 10  # max_num_yawn
-    detection_data["yawn_percentage"] = detection_data["yawn_frame_count"] / len(
-        landmarks
-    )
+    detection_data["yawn_percentage"] = detection_data["yawn_frame_count"] / len_ldmrk
     detection_data["yawn_time"] = (
         detection_data["yawn_frame_count"] * frame_length
     ) / video_length
