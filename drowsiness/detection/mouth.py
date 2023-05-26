@@ -22,34 +22,34 @@ def inner_lip_area(landmarks):
     return area
 
 
-def execute(landmarks, fps=24, video_length=30, yawn_area=300, yawn_duration=4):
-    if landmarks is None:
-        print("Lista vazia.")
-        return
+def execute(landmarks, fps=24, yawn_area=300, yawn_duration=4):
     frame_length = 1 / fps
+
     detection_data = {"yawn_count": 0, "yawn_frame_count": 0}
 
     area_array = []
     yawn_frames = 0
-    len_ldmrk = 0
+    frame_count = 0
     for landmark in landmarks:
-        len_ldmrk += 1
+        frame_count += 1
         if landmark is None:
             continue
         inner_area = inner_lip_area(landmark)
 
         if inner_area > yawn_area:
             yawn_frames += 1
+            detection_data["yawn_frame_count"] += 1
         else:
             if yawn_frames > yawn_duration:
                 detection_data["yawn_count"] += 1
-                detection_data["yawn_frame_count"] += yawn_frames
             yawn_frames = 0
 
         area_array.append(inner_area)
 
+    video_length = frame_count * frame_length
+
     detection_data["yawn_count"] /= 10  # max_num_yawn
-    detection_data["yawn_percentage"] = detection_data["yawn_frame_count"] / len_ldmrk
+    detection_data["yawn_percentage"] = detection_data["yawn_frame_count"] / frame_count
     detection_data["yawn_time"] = (
         detection_data["yawn_frame_count"] * frame_length
     ) / video_length

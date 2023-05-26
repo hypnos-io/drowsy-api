@@ -56,6 +56,6 @@ class SocketManager:
             "fps": data["fps"],
             "imageStatus": status,
         }
-        print(response)
+        print('[WS] Emitting Fatigue Status:', f'{data["id"]} - {status["kssScale"]}')
 
         self.client.emit("notify-status", response)

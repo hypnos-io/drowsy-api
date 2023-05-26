@@ -52,9 +52,9 @@ def calculate_ear(eye):
 
 
 def average_ear(landmarks):
-    
     if landmarks is None:
         return None
+    
     left_eye = np.array(landmarks[LEFT_EYE])
     right_eye = np.array(landmarks[RIGHT_EYE])
 
@@ -68,9 +68,6 @@ def average_ear(landmarks):
 def execute(
     landmarks, ear_threshold=0.17, closed_eyes_threshold=3, fps=24, video_length=30
 ) -> DetectionData:
-    if landmarks is None:
-        print("Lista vazia.")
-        return
     frame_length = 1 / fps
 
     detection_data = {

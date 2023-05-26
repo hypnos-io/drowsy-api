@@ -159,9 +159,6 @@ class HeadDetector(MediapipeHeadDetector):
                         detection_data["total_frontal_down_count"] += 1
 
                     if frontal_down_consecutives > consec_frames_threshold_frontal:
-                        print(
-                            f"\033[31m Frontal :{frames}\033[0m | Angle: {data['head_frontal']}"
-                        )
                         frontal_down_count += 1
 
                 else:
@@ -175,9 +172,6 @@ class HeadDetector(MediapipeHeadDetector):
                         detection_data["total_lateral_down_count"] += 1
 
                     if lateral_down_consecutives > consec_frames_threshold_lateral:
-                        print(
-                            f"\033[32m Latereal :{frames}\033[0m | Angle: {data['head_lateral']}"
-                        )
                         lateral_down_count += 1
 
                 else:
@@ -237,7 +231,6 @@ class HeadDetector(MediapipeHeadDetector):
             + final_result_lateral * individual_weights["lateral_weight"]
         ) / 2
 
-        print(result)
         return DetectionData(round(result, 1), detection_data)
 
 

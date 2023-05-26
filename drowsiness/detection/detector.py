@@ -6,23 +6,27 @@ from insightface.app import FaceAnalysis
 
 def insight_app():
     app = FaceAnalysis(
-        allowed_modules=["detection", "landmark_2d_106"],
+        allowed_modules=["detection", "landmark_2d_106", 'landmark_3d_68'],
         providers=["CPUExecutionProvider"],
     )
     app.prepare(ctx_id=0, det_size=(640, 640))
     return app
 
-def get_landmarks(insight_faces):
+def get2dmarks(insight_faces):
     if insight_faces:
         return np.round(insight_faces[0].landmark_2d_106).astype(int)
+
+def get3dmarks(insight_faces):
+    if insight_faces:
+        return np.round(insight_faces[0].landmark_3d_68).astype(int)
 
 INSIGHT_FACE = insight_app()
 
 InsightDetector = {
     "faces": INSIGHT_FACE.get,
-    "landmarks": get_landmarks,
+    "2d": get2dmarks,
+    "3d": get3dmarks,
 }
-
 
 MediapipeDetector = {
     "pose": mp.solutions.pose,
